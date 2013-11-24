@@ -54,7 +54,7 @@ function doSquare(x){ use return value here
 }
 ```
 
-The client can expose functions just as easily as the server with a very similar api on the server to access those.
+__The client can expose functions just as easily as the server with a very similar api on the server to access those.__
 
 
 # Server Api
