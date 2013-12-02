@@ -1,28 +1,49 @@
 (function () {
 
+  function uuid() {
+    return Math.floor(Math.random()*1000000000).toString(36);
+  }
+
   function isNode(){
     return (typeof window)==='undefined';
   }
 
+  var __ = {
+    isFunction: function(value) {
+      return typeof value == 'function';
+    },
+    map: function(seq, fun){
+      var res = Array(seq.length);
+      for (var i=0; i<seq.length; i++){
+        res[i] = fun(seq[i]);
+      }
+      return res;
+    },
+    has: function(object, property) {
+      return object ? hasOwnProperty.call(object, property) : false;
+    },
+    keys: function(obj) { //not the same semantics as in _, but will do here
+      var res = [];
+      for (prop in obj){
+        res.push(prop);
+      }
+      return res;
+    }
+  }
+
   if (isNode()) {
-    var _ = require('lodash');
     var http = require('http');
-    var uuid = require('node-uuid');
     var mime = require('mime');
     var url = require('url');
     var fs = require('fs');
     var ws = require('ws');
     var WsServer = ws.Server;
-  } else {
-    var _ = window._;
-    var uuid = window.uuid;
   }
-
 
   var common = {}
 
   common.expose = function expose(name, fun){
-    if (_.isFunction(fun)){
+    if (__.isFunction(fun)){
       this.registry[name] = fun;
     } else {
       throw "Can only publish Functions!"
@@ -34,7 +55,7 @@
     var api = {};
     var client = this.clients[client_id];
     if (client) {
-      _.forEach(client.funs, function(fun){
+      client.funs.forEach(function(fun){
         api[fun] = function(){
           var resultCallbacks = [];
           var hasReturned = false;
@@ -44,7 +65,7 @@
             hasReturned = true;
             retval = _retval;
             err = _err;
-            _.forEach(resultCallbacks, function(callback){
+            resultCallbacks.forEach(function(callback){
               callback(retval, err)
             })
           });
@@ -52,7 +73,7 @@
             onComplete: function(f){
               if (hasReturned) {
                 f(retval, err);
-              } else{
+              } else {
                 resultCallbacks.push(f);
               }
             }
@@ -80,7 +101,7 @@
   common.publishToClient = function publishToClient(client_id){
     var message = JSON.stringify({
       kind: "publish",
-      funs: _.keys(this.registry)
+      funs: __.keys(this.registry)
     });
     this.sendToClient(client_id, message);
   }
@@ -159,7 +180,7 @@
         this.sendToClient(client_id, JSON.stringify(reply));
       }
       else if (data.kind==="error"){
-        if (_.has(data, "request_id")){
+        if (__.has(data, "request_id")){
           var callback = this.callbacks[data.request_id];
           delete this.callbacks[data.request_id];
           callback.apply(null, [null, data.message]);
@@ -179,8 +200,8 @@
 
   common.processIncomingArguments = function processIncomingArguments(args, client_id){
     var that = this;
-    return _.map(args, function(arg){
-      if (_.has(arg, "_$exfunid")){
+    return __.map(args, function(arg){
+      if (__.has(arg, "_$exfunid")){
         return function(){
           that.performCall(client_id, arg["_$exfunid"], arguments, function(){});
         }
@@ -192,13 +213,20 @@
 
   common.processOutgoingArguments = function processOutgoingArguments(args) {
     var that = this;
-    var retval = _.map(args, function(arg){
-      if (_.isFunction(arg)){
-        var potential_fun = _.findKey(this.registry, function(f){return (f===arg);});
+    var retval = __.map(args, function(arg){
+      if (__.isFunction(arg)){
+        var potential_fun;
+        // = _.findKey(this.registry, function(f){return (f===arg);});
+        for (pfun in this.registry) {
+          if (this.registry[pfun]===arg){
+            potential_fun = pfun;
+            break;
+          }
+        }
         if (potential_fun){
           return { "_$exfunid": potential_fun} //This needs testing!!!
         } else {
-          var id = uuid.v1();
+          var id = uuid();
           that.anonRegistry[id] = arg;
           setTimeout(function(){delete that.anonRegistry[id]}, 10000); //GC
           return { "_$exfunid": id};
@@ -211,7 +239,7 @@
   }
 
   common.performCall = function performCall(client_id, fun, args, callback){
-      var request_id = uuid.v1();
+      var request_id = uuid();
       this.callbacks[request_id] = callback;
       this.sendToClient(client_id, JSON.stringify({
           kind: "call",
@@ -244,7 +272,7 @@
     var that = this;
 
     ws_server.on('connection', function(socket){
-        var client_id = uuid.v1();
+        var client_id = uuid();
         that.clients[client_id] = {socket: socket, funs: [], published: false, publishCallbacks: []};
         socket.on('close', function(code, message){
             delete that.clients[client_id];
@@ -312,7 +340,7 @@
 
     this.start = startServer;
     this.getAllClients = function(){
-      return _.keys(this.clients);
+      return __.keys(this.clients);
     }
   }
 
