@@ -1,23 +1,23 @@
 # Overview
 
-__Expose__ is a simple, low level web framework for single page web apps. It's very different from most common web frameworks in that there are no Models, Views or Controllers out of the box. With the exception of the root page of your site, __Expose__ also does not deal with serving up any resources directly.  
-__Expose__ instead lets you treat client and server code (almost) as if they were in the same process. Both client and server can expose arbitrary functions, which the other can then call as if they were local functions, passing callbacks and all.  
-You will likely still be writing seperate code for the client and the server, but __Expose__ makes the interaction between the two a whole lot easier.   
+__Expose__ is a simple, low level web framework for single page web apps. It's very different from most common web frameworks in that there are no Models, Views or Controllers out of the box. With the exception of the root page of your site, __Expose__ also does not deal with serving up any resources directly.
+__Expose__ instead lets you treat client and server code (almost) as if they were in the same process. Both client and server can expose arbitrary functions, which the other can then call as if they were local functions, passing callbacks and all.
+You will likely still be writing seperate code for the client and the server, but __Expose__ makes the interaction between the two a whole lot easier.
 
 ## Example
 Here is a terribly contrived example that has the client offloading some complicated computation to the server:
 
 ### Server
-```
+```js
 function square(x, callback){
-	callback(x,x*x);	
+	callback(x,x*x);
 }
 expose("square", square)
 ```
 
 ### Client
 
-```
+```js
 function updateResult(x, x2){
 	console.log("The square of " + x + " is " + x2);
 }
@@ -32,14 +32,14 @@ function doSquare(x){
 You can also get the return value of a remote function. Using that functionality - throwing in some anonymous functions - the example would look like this
 
 ### Server Take 2
-```
+```js
 expose("square", function(x, callback){
 	return x*x;
 });
 ```
 
 ### Client Take 2
-```
+```js
 function doSquare(x){ use return value here
 	withServerApi(function(api){
 		var future = api.square(x);
@@ -47,7 +47,7 @@ function doSquare(x){ use return value here
 			if (!error){
 				console.log("The square of " + x + " is " + value);
 			} else {
-				console.log("Error: " + error); 
+				console.log("Error: " + error);
 			}
 		});
 	});
