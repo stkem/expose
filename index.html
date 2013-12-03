@@ -1,41 +1,39 @@
 <!DOCTYPE html>
 <html>
-
   <head>
-    <meta charset='utf-8' />
-    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
-    <meta name="description" content="Expose : Bidirectional Browser-Server RPC framework" />
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link href='https://fonts.googleapis.com/css?family=Architects+Daughter' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen" />
+    <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen" />
+    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print" />
 
-    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
 
-    <title>Expose</title>
+    <title>Expose by stkem</title>
   </head>
 
   <body>
+    <header>
+      <div class="inner">
+        <h1>Expose</h1>
+        <h2>Bidirectional Browser-Server RPC framework</h2>
+        <a href="https://github.com/stkem/expose" class="button"><small>View project on</small>GitHub</a>
+      </div>
+    </header>
 
-    <!-- HEADER -->
-    <div id="header_wrap" class="outer">
-        <header class="inner">
-          <a id="forkme_banner" href="https://github.com/stkem/expose">View on GitHub</a>
-
-          <h1 id="project_title">Expose</h1>
-          <h2 id="project_tagline">Bidirectional Browser-Server RPC framework</h2>
-
-            <section id="downloads">
-              <a class="zip_download_link" href="https://github.com/stkem/expose/zipball/master">Download this project as a .zip file</a>
-              <a class="tar_download_link" href="https://github.com/stkem/expose/tarball/master">Download this project as a tar.gz file</a>
-            </section>
-        </header>
-    </div>
-
-    <!-- MAIN CONTENT -->
-    <div id="main_content_wrap" class="outer">
-      <section id="main_content" class="inner">
-        <h1>
+    <div id="content-wrapper">
+      <div class="inner clearfix">
+        <section id="main-content">
+          <h1>
 <a name="overview" class="anchor" href="#overview"><span class="octicon octicon-link"></span></a>Overview</h1>
 
-<p><strong>Expose</strong> is a simple, low level web framework for single page web apps. It's very different from most common web frameworks in that there are no Models, Views or Controllers out of the box. With the exception of the root page of your site, <strong>Expose</strong> also does not deal with serving up any resources directly.<br><strong>Expose</strong> instead lets you treat client and server code (almost) as if they were in the same process. Both client and server can expose arbitrary functions, which the other can then call as if they were local functions, passing callbacks and all.<br>
-You will likely still be writing seperate code for the client and the server, but <strong>Expose</strong> makes the interaction between the two a whole lot easier.   </p>
+<p><strong>Expose</strong> is a simple, low level web framework for single page web apps. It's very different from most common web frameworks in that there are no Models, Views or Controllers out of the box. With the exception of the root page of your site, <strong>Expose</strong> also does not deal with serving up any resources directly.
+<strong>Expose</strong> instead lets you treat client and server code (almost) as if they were in the same process. Both client and server can expose arbitrary functions, which the other can then call as if they were local functions, passing callbacks and all.
+You will likely still be writing seperate code for the client and the server, but <strong>Expose</strong> makes the interaction between the two a whole lot easier.</p>
 
 <h2>
 <a name="example" class="anchor" href="#example"><span class="octicon octicon-link"></span></a>Example</h2>
@@ -46,7 +44,7 @@ You will likely still be writing seperate code for the client and the server, bu
 <a name="server" class="anchor" href="#server"><span class="octicon octicon-link"></span></a>Server</h3>
 
 <div class="highlight highlight-js"><pre><span class="kd">function</span> <span class="nx">square</span><span class="p">(</span><span class="nx">x</span><span class="p">,</span> <span class="nx">callback</span><span class="p">){</span>
-    <span class="nx">callback</span><span class="p">(</span><span class="nx">x</span><span class="p">,</span><span class="nx">x</span><span class="o">*</span><span class="nx">x</span><span class="p">);</span>    
+    <span class="nx">callback</span><span class="p">(</span><span class="nx">x</span><span class="p">,</span><span class="nx">x</span><span class="o">*</span><span class="nx">x</span><span class="p">);</span>
 <span class="p">}</span>
 <span class="nx">expose</span><span class="p">(</span><span class="s2">"square"</span><span class="p">,</span> <span class="nx">square</span><span class="p">)</span>
 </pre></div>
@@ -85,7 +83,7 @@ You will likely still be writing seperate code for the client and the server, bu
             <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">error</span><span class="p">){</span>
                 <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"The square of "</span> <span class="o">+</span> <span class="nx">x</span> <span class="o">+</span> <span class="s2">" is "</span> <span class="o">+</span> <span class="nx">value</span><span class="p">);</span>
             <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-                <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"Error: "</span> <span class="o">+</span> <span class="nx">error</span><span class="p">);</span> 
+                <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"Error: "</span> <span class="o">+</span> <span class="nx">error</span><span class="p">);</span>
             <span class="p">}</span>
         <span class="p">});</span>
     <span class="p">});</span>
@@ -122,18 +120,25 @@ You will likely still be writing seperate code for the client and the server, bu
 <p>Node Packages: uuid, ws, lodash, mime</p>
 
 <p>On the Client: uuid.js and lodash.js in the directory you are serving from.</p>
-      </section>
+        </section>
+
+        <aside id="sidebar">
+          <a href="https://github.com/stkem/expose/zipball/master" class="button">
+            <small>Download</small>
+            .zip file
+          </a>
+          <a href="https://github.com/stkem/expose/tarball/master" class="button">
+            <small>Download</small>
+            .tar.gz file
+          </a>
+
+          <p class="repo-owner"><a href="https://github.com/stkem/expose"></a> is maintained by <a href="https://github.com/stkem">stkem</a>.</p>
+
+          <p>This page was generated by <a href="pages.github.com">GitHub Pages</a> using the Architect theme by <a href="https://twitter.com/jasonlong">Jason Long</a>.</p>
+        </aside>
+      </div>
     </div>
 
-    <!-- FOOTER  -->
-    <div id="footer_wrap" class="outer">
-      <footer class="inner">
-        <p class="copyright">Expose maintained by <a href="https://github.com/stkem">stkem</a></p>
-        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
-      </footer>
-    </div>
-
-    
-
+  
   </body>
 </html>
