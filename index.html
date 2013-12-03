@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8' />
+    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
+    <meta name="description" content="Expose : Bidirectional Browser-Server RPC framework" />
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Expose</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/stkem/expose">View on GitHub</a>
+
+          <h1 id="project_title">Expose</h1>
+          <h2 id="project_tagline">Bidirectional Browser-Server RPC framework</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/stkem/expose/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/stkem/expose/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1>
+<a name="overview" class="anchor" href="#overview"><span class="octicon octicon-link"></span></a>Overview</h1>
+
+<p><strong>Expose</strong> is a simple, low level web framework for single page web apps. It's very different from most common web frameworks in that there are no Models, Views or Controllers out of the box. With the exception of the root page of your site, <strong>Expose</strong> also does not deal with serving up any resources directly.<br><strong>Expose</strong> instead lets you treat client and server code (almost) as if they were in the same process. Both client and server can expose arbitrary functions, which the other can then call as if they were local functions, passing callbacks and all.<br>
+You will likely still be writing seperate code for the client and the server, but <strong>Expose</strong> makes the interaction between the two a whole lot easier.   </p>
+
+<h2>
+<a name="example" class="anchor" href="#example"><span class="octicon octicon-link"></span></a>Example</h2>
+
+<p>Here is a terribly contrived example that has the client offloading some complicated computation to the server:</p>
+
+<h3>
+<a name="server" class="anchor" href="#server"><span class="octicon octicon-link"></span></a>Server</h3>
+
+<div class="highlight highlight-js"><pre><span class="kd">function</span> <span class="nx">square</span><span class="p">(</span><span class="nx">x</span><span class="p">,</span> <span class="nx">callback</span><span class="p">){</span>
+    <span class="nx">callback</span><span class="p">(</span><span class="nx">x</span><span class="p">,</span><span class="nx">x</span><span class="o">*</span><span class="nx">x</span><span class="p">);</span>    
+<span class="p">}</span>
+<span class="nx">expose</span><span class="p">(</span><span class="s2">"square"</span><span class="p">,</span> <span class="nx">square</span><span class="p">)</span>
+</pre></div>
+
+<h3>
+<a name="client" class="anchor" href="#client"><span class="octicon octicon-link"></span></a>Client</h3>
+
+<div class="highlight highlight-js"><pre><span class="kd">function</span> <span class="nx">updateResult</span><span class="p">(</span><span class="nx">x</span><span class="p">,</span> <span class="nx">x2</span><span class="p">){</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"The square of "</span> <span class="o">+</span> <span class="nx">x</span> <span class="o">+</span> <span class="s2">" is "</span> <span class="o">+</span> <span class="nx">x2</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kd">function</span> <span class="nx">doSquare</span><span class="p">(</span><span class="nx">x</span><span class="p">){</span>
+    <span class="nx">withServerApi</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">api</span><span class="p">){</span>
+        <span class="nx">api</span><span class="p">.</span><span class="nx">square</span><span class="p">(</span><span class="nx">x</span><span class="p">,</span> <span class="nx">updateResult</span><span class="p">);</span>
+    <span class="p">});</span>
+<span class="p">}</span>
+</pre></div>
+
+<p>You can also get the return value of a remote function. Using that functionality - throwing in some anonymous functions - the example would look like this</p>
+
+<h3>
+<a name="server-take-2" class="anchor" href="#server-take-2"><span class="octicon octicon-link"></span></a>Server Take 2</h3>
+
+<div class="highlight highlight-js"><pre><span class="nx">expose</span><span class="p">(</span><span class="s2">"square"</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">x</span><span class="p">,</span> <span class="nx">callback</span><span class="p">){</span>
+    <span class="k">return</span> <span class="nx">x</span><span class="o">*</span><span class="nx">x</span><span class="p">;</span>
+<span class="p">});</span>
+</pre></div>
+
+<h3>
+<a name="client-take-2" class="anchor" href="#client-take-2"><span class="octicon octicon-link"></span></a>Client Take 2</h3>
+
+<div class="highlight highlight-js"><pre><span class="kd">function</span> <span class="nx">doSquare</span><span class="p">(</span><span class="nx">x</span><span class="p">){</span> <span class="nx">use</span> <span class="k">return</span> <span class="nx">value</span> <span class="nx">here</span>
+    <span class="nx">withServerApi</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">api</span><span class="p">){</span>
+        <span class="kd">var</span> <span class="nx">future</span> <span class="o">=</span> <span class="nx">api</span><span class="p">.</span><span class="nx">square</span><span class="p">(</span><span class="nx">x</span><span class="p">);</span>
+        <span class="nx">future</span><span class="p">.</span><span class="nx">onComplete</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">value</span><span class="p">,</span> <span class="nx">error</span><span class="p">){</span> <span class="c1">//'error' will pass through exceptions that occured on the server</span>
+            <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">error</span><span class="p">){</span>
+                <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"The square of "</span> <span class="o">+</span> <span class="nx">x</span> <span class="o">+</span> <span class="s2">" is "</span> <span class="o">+</span> <span class="nx">value</span><span class="p">);</span>
+            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+                <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"Error: "</span> <span class="o">+</span> <span class="nx">error</span><span class="p">);</span> 
+            <span class="p">}</span>
+        <span class="p">});</span>
+    <span class="p">});</span>
+<span class="p">}</span>
+</pre></div>
+
+<p><strong>The client can expose functions just as easily as the server with a very similar api on the server to access those.</strong></p>
+
+<h1>
+<a name="server-api" class="anchor" href="#server-api"><span class="octicon octicon-link"></span></a>Server Api</h1>
+
+<h1>
+<a name="client-api" class="anchor" href="#client-api"><span class="octicon octicon-link"></span></a>Client Api</h1>
+
+<h1>
+<a name="complete-example" class="anchor" href="#complete-example"><span class="octicon octicon-link"></span></a>Complete Example</h1>
+
+<h1>
+<a name="gotchas" class="anchor" href="#gotchas"><span class="octicon octicon-link"></span></a>Gotchas</h1>
+
+<p>Only top level callbacks are supported at the moment, i.e. if you want to pass a callback to a remote function, it has to be one of the actual direct arguments to the function and not be nested inside another data structure (i.e. object or array).</p>
+
+<p>Callbacks expire after 10 seconds, i.e. if you pass a callback to a remote function, the remote has to call it within 10 seconds or it results in an error. This is for garbadge collection purposes. This does not apply if the callback is also an exposed function.</p>
+
+<h1>
+<a name="client-client-communication" class="anchor" href="#client-client-communication"><span class="octicon octicon-link"></span></a>Client-Client communication</h1>
+
+<h2>
+<a name="webrtc" class="anchor" href="#webrtc"><span class="octicon octicon-link"></span></a>WebRTC</h2>
+
+<h1>
+<a name="dependencies" class="anchor" href="#dependencies"><span class="octicon octicon-link"></span></a>Dependencies</h1>
+
+<p>Node Packages: uuid, ws, lodash, mime</p>
+
+<p>On the Client: uuid.js and lodash.js in the directory you are serving from.</p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Expose maintained by <a href="https://github.com/stkem">stkem</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
