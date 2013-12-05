@@ -82,7 +82,7 @@
       });
     }
     else {
-      Console.log("Not a valid client for api: " + client_id);
+      console.log("Not a valid client for api: " + client_id);
     }
     return api
   }
@@ -216,7 +216,6 @@
     var retval = __.map(args, function(arg){
       if (__.isFunction(arg)){
         var potential_fun;
-        // = _.findKey(this.registry, function(f){return (f===arg);});
         for (pfun in this.registry) {
           if (this.registry[pfun]===arg){
             potential_fun = pfun;
@@ -249,13 +248,18 @@
       }));
   }
 
-  function startServer(host, port){
+  common.onDisconnect = function onDisconnect(fun) {
+    this.disconnectCallbacks.push(fun);
+  }
+
+  function startServer(host, port, rootPath){
+    var that = this;
     if (this.started) throw "Server already started!";
 
     var fileServer = function(req, res){ //Need to async file IO here, root path as argument
       var path = url.parse(req.url).pathname;
       var mimetype = mime.lookup(path);
-      var fullpath = "." + path
+      var fullpath = (rootPath || ".") + path
       if (fs.existsSync(fullpath)){
         var data = fs.readFileSync(fullpath);
         res.writeHead(200, {'Content-Type': mimetype});
@@ -275,7 +279,10 @@
         var client_id = uuid();
         that.clients[client_id] = {socket: socket, funs: [], published: false, publishCallbacks: []};
         socket.on('close', function(code, message){
-            delete that.clients[client_id];
+          that.disconnectCallbacks.forEach(function(cb){
+            cb.call(null, client_id);
+          });
+          delete that.clients[client_id];
         });
         socket.on('message', function(data, flags){
             console.log("Incoming: " + data)
@@ -337,6 +344,7 @@
     this.registry = {};
     this.anonRegistry = {};
     this.callbacks = {};
+    this.disconnectCallbacks = [];
 
     this.start = startServer;
     this.getAllClients = function(){
@@ -358,7 +366,6 @@
       return _client;
     }
   } else {
-
    window.ExposeClient = function(){
       var _client = new Client();
       return _client;
