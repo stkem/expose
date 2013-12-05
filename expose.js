@@ -110,7 +110,7 @@
     var client = this.clients[client_id];
     if (client) {
       client.socket.send(message);
-      console.log("Outgoing: " + message);
+      //console.log("Outgoing: " + message);
     }
     else {
       console.log("Cannot send to client " + client_id + ". No Socket.");
@@ -285,7 +285,7 @@
           delete that.clients[client_id];
         });
         socket.on('message', function(data, flags){
-            console.log("Incoming: " + data)
+            //console.log("Incoming: " + data)
             that.handleMessage(data, client_id);
         });
         that.publishToClient(client_id);
@@ -307,16 +307,22 @@
         that.publishToClient('server');
       });
       socket.on('message', function(data, flags){
-        console.log("Incoming: " + data);
+        //console.log("Incoming: " + data);
         that.handleMessage(data, 'server');
+      });
+      socket.on('close', function(){
+        delete that.clients['server'];
       });
     } else {
       socket.onopen = function(){
         that.publishToClient('server');
       };
       socket.onmessage = function(event){
-        console.log("Incoming: " + event.data);
+        //console.log("Incoming: " + event.data);
         that.handleMessage(event.data, 'server');
+      };
+      socket.onclose = function(){
+        delete that.clients['server'];
       };
     }
   }
