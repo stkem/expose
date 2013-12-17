@@ -1,384 +1,495 @@
-(function () {
+//ZZZ resume a session if the client knows it's id. Have handshake first. Gateway function ('through').
 
-  function uuid() {
-    return Math.floor(Math.random()*1000000000).toString(36);
+//ZZZ fail futures on client disconnect/timeout
+
+//ZZZ directly fulfill promise on return, instead of with a callback?
+
+//ZZZ return value futures and callback futures should contain other_id in this for the on success etc. callbacks
+
+//ZZZ transmit wrapper that is more sructured, e.g. transmit(<kind>, <data>)
+
+//ZZZ add ons can regsiter handlers and function to the public interface and get access to more sturctured transmit
+
+//ZZZ add ons can register expose hooks and static serving hooks (basically like routes), api call hooks, api construction hooks
+
+//ZZZ logging
+
+//ZZZ client cleanup?
+
+///////////
+// UTIL ///
+//////////
+
+(function(){
+
+function keys(obj) {
+  var res = [];
+  for (var prop in obj){
+    res.push(prop);
   }
+  return res;
+}
 
-  function isNode(){
-    return (typeof window)==='undefined';
-  }
+function uuid() {
+  return Math.random().toString(16).slice(2) + Math.random().toString(16).slice(2);
+}
 
-  var __ = {
-    isFunction: function(value) {
-      return typeof value == 'function';
-    },
-    map: function(seq, fun){
-      var res = Array(seq.length);
-      for (var i=0; i<seq.length; i++){
-        res[i] = fun(seq[i]);
-      }
-      return res;
-    },
-    has: function(object, property) {
-      return object ? hasOwnProperty.call(object, property) : false;
-    },
-    keys: function(obj) { //not the same semantics as in _, but will do here
-      var res = [];
-      for (prop in obj){
-        res.push(prop);
-      }
-      return res;
-    }
-  }
+function reportError(msg) {
+  console.error(msg);
+}
 
-  if (isNode()) {
-    var http = require('http');
-    var mime = require('mime');
-    var url = require('url');
-    var fs = require('fs');
-    var ws = require('ws');
-    var WsServer = ws.Server;
-  }
+function Promise() { //ZZZ make sure this can't be completed twice? or is that ok? not in it's current form. RepeatablePromise?
+  //ZZZ completeWith method that handles exceptions
+  //ZZZ and/or takes other promise
+  //ZZZ optional timeout?
+  var completeCallbacks = [];
+  var successCallbacks  = [];
+  var failureCallbacks  = [];
 
-  var common = {}
+  var value;
+  var failureReason;
 
-  common.expose = function expose(name, fun){
-    if (__.isFunction(fun)){
-      this.registry[name] = fun;
-    } else {
-      throw "Can only publish Functions!"
-    }
-  }
+  var isComplete   = false;
+  var isSuccessful = false;
 
-  common.getClientApi = function getClientApi(client_id){
-    var that = this;
-    var api = {};
-    var client = this.clients[client_id];
-    if (client) {
-      client.funs.forEach(function(fun){
-        api[fun] = function(){
-          var resultCallbacks = [];
-          var hasReturned = false;
-          var retval = null;
-          var err = null;
-          that.performCall(client_id, fun, Array.prototype.slice.call(arguments,0), function(_retval, _err){
-            hasReturned = true;
-            retval = _retval;
-            err = _err;
-            resultCallbacks.forEach(function(callback){
-              callback(retval, err)
-            })
-          });
-          return {
-            onComplete: function(f){
-              if (hasReturned) {
-                f(retval, err);
-              } else {
-                resultCallbacks.push(f);
-              }
-            }
-          }
-        };
-      });
-    }
-    else {
-      console.log("Not a valid client for api: " + client_id);
-    }
-    return api
-  }
-
-  common.withClientApi = function withClientApi(client_id, callback){
-    var that = this;
-    if (this.clients[client_id].published) {
-      callback(this.getClientApi(client_id));
-    } else {
-      this.clients[client_id].publishCallbacks.push(function(){
-        callback(that.getClientApi(client_id));
-      });
-    }
-  }
-
-  common.publishToClient = function publishToClient(client_id){
-    var message = JSON.stringify({
-      kind: "publish",
-      funs: __.keys(this.registry)
+  function callCompleteCallbacks() {
+    completeCallbacks.forEach(function(callback) {
+      callback(value,failureReason);
     });
-    this.sendToClient(client_id, message);
   }
 
-  common.sendToClient = function sendToClient(client_id, message){
-    var client = this.clients[client_id];
-    if (client) {
-      client.socket.send(message);
-      //console.log("Outgoing: " + message);
-    }
-    else {
-      console.log("Cannot send to client " + client_id + ". No Socket.");
-    }
+  function callSuccessCallbacks() {
+    successCallbacks.forEach(function(callback) {
+      callback(value);
+    });
   }
 
-  common.handleMessage = function handleMessage(rawdata, client_id){
-      try {
-        var data = JSON.parse(rawdata)
-      } catch(e) {
-        var reply = {
-          kind: "error",
-          message: "Invalid Json: " + rawdata,
-          code: 400
-        }
-        this.sendToClient(client_id, JSON.stringify(reply));
-        return;
+  function callFailureCallbacks() {
+    failureCallbacks.forEach(function(callback) {
+      callback(failureReason);
+    });
+  }
+
+  this.isComplete = function() { return isComplete };
+  this.isSuccessful = function() { return isSuccessful };
+  this.success = function(result) {
+    isComplete = true;
+    isSuccessful = true;
+    value = result;
+    callCompleteCallbacks();
+    callSuccessCallbacks();
+  };
+  this.failure = function(reason) {
+    isComplete = true;
+    isSuccessful = false;
+    failureReason = reason;
+    callCompleteCallbacks();
+    callFailureCallbacks();
+  };
+  this.onComplete = function(callback) {
+    if (isComplete) callback(value, failureReason);
+    else completeCallbacks.push(callback);
+  };
+  this.onSuccess = function(callback) {
+    if (isComplete && isSuccessful) callback(value);
+    else successCallbacks.push(callback);
+  };
+  this.onFailure = function(callback) {
+    if (isComplete && !isSuccessful) callback(failureReason);
+    else failureCallbacks.push(callback);
+  };
+
+}
+
+function SimpleFuture(fun) {
+  var promise = new Promise()
+  fun(function(res, err){
+    if (err) {
+      promise.failure(err);
+    } else {
+      promise.success(res);
+    }
+  });
+  return promise;
+}
+
+function Client(id) {
+  this.apiPromise = new Promise();
+  this.id = id;
+}
+
+
+function Common(transmit, options) { //transmit takes clientId and string to send
+
+  var opts = {
+    lambdaLifetime: options.lambdaLifetime || 10000
+  }
+
+  //state
+  var functionRegistry = {}; //maps name to function object
+  var lambdaRegistry = {}; //anonymous callbacks
+  var clients = {};  //maps client ids (string) to Client object
+  var returnCallbacks = {}; //function to be called when the other side send 'return' or 'error'
+  var disconnectHandlers = [];
+
+
+  function serializeFunction(fun) {
+    var maybeFunction;
+    for (var candidate in functionRegistry) {
+      if (functionRegistry[candidate]===fun) {
+        maybeFunction = candidate;
+        break;
       }
-      if (data.kind==="call") {
-        var fun = this.registry[data.fun] || this.anonRegistry[data.fun]
-        if (!fun){
-          var reply = {
-            kind: "error",
-            message: "Unknown Function: " + data.fun,
-            code: 404,
+    }
+    if (maybeFunction) {
+      return { "_$exfunid": maybeFunction};
+    } else {
+      var lambdaId = uuid();
+      lambdaRegistry[lambdaId] = fun;
+      setTimeout(function() {
+        delete lambdaRegistry[lambdaId];
+      }, opts.lambdaLifetime) //GC
+      return { "_$exfunid": lambdaId};
+    }
+  }
+
+  function processOutgoingArguments(rawArgs) { //this deals with callbacks in the arguments to a remote function
+    var args = Array.prototype.slice.call(rawArgs,0); //first, make sure it's a real array
+    return args.map(function(arg) {
+      if (typeof arg === 'function') {
+        return serializeFunction(arg);
+      } else {
+        return arg;
+      }
+    });
+  }
+
+  function performRemoteCall(clientId, funName, args, callback) {
+    var requestId = uuid();
+    var message = {
+      'kind': 'call',
+      'fun': funName,
+      'args': processOutgoingArguments(args),
+      'request_id': requestId
+    };
+    returnCallbacks[requestId] = callback;
+    transmit(clientId, JSON.stringify(message));
+  }
+
+  function remoteFutureFactory(clientId, funName) {
+    return function() {
+      return SimpleFuture(performRemoteCall.bind(null, clientId, funName, arguments))
+    }
+  }
+
+  function processIncomingArguments(clientId, args) {
+    return args.map(function(arg) {
+      if (arg.hasOwnProperty("_$exfunid")) {
+        return remoteFutureFactory(clientId, arg["_$exfunid"]);
+      } else {
+        return arg;
+      }
+    });
+  }
+
+  function constructApiObject(clientId, funs) {
+    var api = {};
+    funs.forEach(function(funName) {
+      api[funName] = remoteFutureFactory(clientId, funName);
+    })
+    return api;
+  }
+
+  function publishToClient(clientId) {
+    var message = {
+      kind: "publish",
+      funs: keys(functionRegistry)
+    };
+    transmit(clientId, JSON.stringify(message));
+  }
+
+
+  var handlers = {
+    '_missing': function(client, data) {
+      var message = {
+        kind: "error",
+        message: "Did not understand message: >>>" + JSON.stringify(data) + "<<<",
+        code: 400,
+        request_id: data.request_id
+      }
+      transmit(client.id, JSON.stringify(message));
+    },
+    'publish': function(client, data) {
+      client.apiPromise.success(constructApiObject(client.id, data.funs));
+    },
+    'call': function(client, data) {
+      var fun = functionRegistry[data.fun] || lambdaRegistry[data.fun];
+      if (!fun) {
+        var message = {
+          kind: "error",
+          message: "Unknown Function: " + data.fun,
+          code: 404,
+          request_id: data.request_id
+        };
+        transmit(client.id, JSON.stringify(message));
+      } else {
+        var context = {otherEnd: client.id};
+        // try {
+          var message = {
+            kind: "return",
+            retval: fun.apply(context, processIncomingArguments(client.id, data.args)),
             request_id: data.request_id
           };
-          this.sendToClient(client_id, JSON.stringify(reply));
-          return;
-        }
-        var context = {other_id: client_id};
-        try {
-          var reply = {
-              kind: "return",
-              retval: fun.apply(context, this.processIncomingArguments(data.args, client_id)),
-              request_id: data.request_id
-          }
-        } catch(e) {
-          console.log("Bad Call:" + e);
-          var reply = {
-            kind: "error",
-            message: e,
-            code: 400,
-            request_id: data.request_id
-          }
-        }
-        this.sendToClient(client_id,JSON.stringify(reply));
-      } else if (data.kind==="return"){
-          var callback = this.callbacks[data.request_id];
-          delete this.callbacks[data.request_id];
-          var args = data.retval;
-          callback.apply(null, [args, null]);
+        // } catch(e) {
+        //   console.log(e);
+        //   var message = {
+        //     kind: "error",
+        //     message: '' + e,
+        //     code: 400,
+        //     request_id: data.request_id
+        //   };
+        // }
+        transmit(client.id,JSON.stringify(message));
       }
-      else if (data.kind==="publish"){
-        this.clients[client_id].funs = data.funs;
-        this.clients[client_id].published = true;
-        this.clients[client_id].publishCallbacks.forEach(function(callback){
-          callback();
-        });
-        this.clients[client_id].publishCallbacks = [];
+    },
+    'return': function(client, data) {
+      var callback = returnCallbacks[data.request_id];
+      delete returnCallbacks[data.request_id];
+      var returnValue = data.retval;
+      if (returnValue && returnValue.hasOwnProperty("_$exfunid")) {
+        returnValue = remoteFutureFactory(client.id, arg["_$exfunid"]);
+      }
+      callback.apply(null, [returnValue, null]);
+    },
+    'error': function(client, data) {
+      if (data.hasOwnProperty("request_id")) {
+        var callback = returnCallbacks[data.request_id];
+        delete returnCallbacks[data.request_id];
+        callback.apply(null, [null, data.message]);
+      }
+    },
+    'ping': function(client, data) {
+      var message = {
+        kind: 'pong'
+      };
+      transmit(client.id, JSON.stringify(reply));
+    },
+    'pong': function(client, data) { //ZZZ tie in with 'alive' function somewhow
 
-      }
-      else if (data.kind==="ping"){
-        var reply = {
-          kind: "pong"
-        }
-        this.sendToClient(client_id, JSON.stringify(reply));
-      }
-      else if (data.kind==="error"){
-        if (__.has(data, "request_id")){
-          var callback = this.callbacks[data.request_id];
-          delete this.callbacks[data.request_id];
-          callback.apply(null, [null, data.message]);
-        }
-      }
-      else {
-        var reply = {
+    }
+  }
+
+  var internal = {
+    receive: function(clientId, rawData) {
+      try {
+        var data = JSON.parse(rawData)
+      } catch(e) {
+        var message = {
           kind: "error",
-          message: "Did not understand message: " + rawdata,
-          code: 400,
-          request_id: data.request_id
+          message: "Invalid Json: >>>" + rawData + "<<<",
+          code: 400
         }
-        this.sendToClient(client_id, JSON.stringify(reply));
+        transmit(clientId, JSON.stringify(message));
+        return;
       }
+      var handler = handlers[data.kind] || handlers["_missing"];
+      var client = clients[clientId]; //ZZZ what if there is no client
+      handler(client, data);
+    },
+    connect: function(clientId) {
+      clients[clientId] = new Client(clientId);
+      publishToClient(clientId);
+    },
+    disconnect: function(clientId) {
+      delete clients[clientId];
+      disconnectHandlers.forEach(function(cb) {
+        cb.apply(null, clientId);
+      })
+    },
+    alive: function(clientId, callback) { //checks if client is responding correctly within clientTimeout. Call callback with true or false
+
+    }
   }
 
-
-  common.processIncomingArguments = function processIncomingArguments(args, client_id){
-    var that = this;
-    return __.map(args, function(arg){
-      if (__.has(arg, "_$exfunid")){
-        return function(){
-          that.performCall(client_id, arg["_$exfunid"], arguments, function(){});
-        }
-      } else {
-        return arg;
+  var instance = {
+    internal: internal,
+    expose: function(name, fun) {
+      if (typeof fun === 'function') functionRegistry[name] = fun;
+      else reportError("Attempt to expose non function object!");
+    },
+    withClientApi: function(clientId, callback) {
+      ///ZZZ check clientId real?
+      clients[clientId].apiPromise.onSuccess(callback);
+    },
+    onDisconnect: function(callback) {
+      disconnectHandlers.push(callback);
+    },
+    forEachClient: function(callback) {
+      for (var clientId in clients) {
+        clients[clientId].apiPromise.onSuccess(callback);
       }
-    })
+    }
+  };
+
+ return instance;
+
+}
+
+
+
+
+
+function Server(options) { //ZZZ file server, options
+  var ws = require('ws');
+  var http = require('http');
+  var mime = require('mime');
+  var url = require('url');
+  var fs = require('fs');
+  var path = require('path');
+
+  options = options || {};
+  opts = {
+    assets: options.assets || "."
   }
 
-  common.processOutgoingArguments = function processOutgoingArguments(args) {
-    var that = this;
-    var retval = __.map(args, function(arg){
-      if (__.isFunction(arg)){
-        var potential_fun;
-        for (pfun in this.registry) {
-          if (this.registry[pfun]===arg){
-            potential_fun = pfun;
-            break;
-          }
-        }
-        if (potential_fun){
-          return { "_$exfunid": potential_fun} //This needs testing!!!
-        } else {
-          var id = uuid();
-          that.anonRegistry[id] = arg;
-          setTimeout(function(){delete that.anonRegistry[id]}, 10000); //GC
-          return { "_$exfunid": id};
-        }
-      } else {
-        return arg;
-      }
-    })
-    return retval;
-  }
-
-  common.performCall = function performCall(client_id, fun, args, callback){
-      var request_id = uuid();
-      this.callbacks[request_id] = callback;
-      this.sendToClient(client_id, JSON.stringify({
-          kind: "call",
-          fun: fun,
-          args: this.processOutgoingArguments(args),
-          request_id: request_id
-      }));
-  }
-
-  common.onDisconnect = function onDisconnect(fun) {
-    this.disconnectCallbacks.push(fun);
-  }
-
-  function startServer(host, port, rootPath){
-    var that = this;
-    if (this.started) throw "Server already started!";
-
-    var fileServer = function(req, res){ //Need to async file IO here, root path as argument
-      var path = url.parse(req.url).pathname;
-      var mimetype = mime.lookup(path);
-      var fullpath = (rootPath || ".") + path
-      if (fs.existsSync(fullpath)){
-        var data = fs.readFileSync(fullpath);
-        res.writeHead(200, {'Content-Type': mimetype});
-        res.end(data);
+  function fileServer(req, res) { //ZZZ long polling hooks go here
+    var rawpath = url.parse(req.url).pathname;
+    var mimetype = mime.lookup(rawpath);
+    var fullpath = path.join(opts.assets,rawpath);
+    fs.exists(fullpath, function(exists) {
+      if (exists) {
+        fs.readFile(fullpath, function(err, data) {
+          res.writeHead(200, {'Content-Type': mimetype});
+          res.end(data);
+        });
       } else {
         res.writeHead(404);
         res.end();
       }
+    })
+  }
+
+  var httpServer = http.createServer(fileServer);
+  var wsServer = new ws.Server({server: httpServer});
+
+  var sockets = {}; //clientId to Socket object
+
+  var instance = Common(function(clientId, msg) { //ZZZ this transmit function needs to buffer, both for reconnects and long polling
+    var socket = sockets[clientId];
+    if (socket) {
+      console.log("Outgoing: " + msg);
+      socket.send(msg);
     }
+    else console.log("Warning. No socket for <" + clientId + ">. Not sending: " + msg);
+  },options)
 
-    this.started = true;
-    var http_server = http.createServer(fileServer).listen(port, host);
-    var ws_server = new WsServer({server: http_server});
-    var that = this;
+  wsServer.on('connection', function(socket) {
+    var clientId = uuid();
+    sockets[clientId] = socket;
+    instance.internal.connect(clientId);
 
-    ws_server.on('connection', function(socket){
-        var client_id = uuid();
-        that.clients[client_id] = {socket: socket, funs: [], published: false, publishCallbacks: []};
-        socket.on('close', function(code, message){
-          that.disconnectCallbacks.forEach(function(cb){
-            cb.call(null, client_id);
-          });
-          delete that.clients[client_id];
-        });
-        socket.on('message', function(data, flags){
-            //console.log("Incoming: " + data)
-            that.handleMessage(data, client_id);
-        });
-        that.publishToClient(client_id);
+    socket.on('close', function(code, message) {
+      instance.internal.disconnect(clientId);
+      delete sockets[clientId];
+    });
+
+    socket.on('message', function(data, flags) {
+      console.log("Incoming: " + data);
+      instance.internal.receive(clientId, data);
+    });
+  });
+
+  instance.start = function(host, port) {
+    httpServer.listen(port, host);
+  }
+
+  return instance;
+}
+
+function NodeClient(options) {
+  var ws = require('ws');
+  var socket;
+
+  var instance = Common(function(clientId, msg) {
+    if (clientId === "_server") socket.send(msg);
+    else console.log("Unknown Client: " + clientId);
+  },options || {});
+
+  var onOpen = [];
+  var opened = false;
+
+  instance.withServerApi = function(callback) {
+    if (opened) instance.withClientApi('_server', callback);
+    else onOpen.push(instance.withClientApi.bind(instance,'_server', callback));
+  }
+
+  instance.start = function(host,port) {
+    socket = new ws("ws://" + host + ":" + port);
+
+    socket.on('open', function(){
+      instance.internal.connect("_server");
+      opened = true;
+      onOpen.forEach(function(callback) {
+        callback();
+      });
+    });
+    socket.on('message', function(data, flags){
+      instance.internal.receive("_server", data);
+    });
+    socket.on('close', function(){
+      instance.internal.disconnect("_server");
     });
   }
 
-  function startClient(host, port){
-    if (this.started) throw "Client already started!";
-    this.started = true;
-    if (isNode()){
-      var socket = new ws("ws://" + host + ":" + port);
-    } else {
-      var socket = new WebSocket("ws://" + host + ":" + port);
+  return instance;
+}
+
+function BrowserClient(options) {
+  var socket;
+
+  var instance = Common(function(clientId, msg) {
+    if (clientId === "_server") socket.send(msg);
+    else console.log("Unknown Client: " + clientId);
+  },options || {});
+
+  var onOpen = [];
+  var opened = false;
+
+  instance.withServerApi = function(callback) {
+    if (opened) instance.withClientApi('_server', callback);
+    else onOpen.push(instance.withClientApi.bind(instance,'_server', callback));
+  }
+
+  instance.start = function(host,port) {
+    socket = new WebSocket("ws://" + host + ":" + port);
+
+    socket.onopen = function(){
+      instance.internal.connect("_server");
+      opened = true;
+      onOpen.forEach(function(callback) {
+        callback();
+      });
     }
-    var that = this;
-    this.clients['server'] = {socket: socket, funs: [], published: false, publishCallbacks: []};
-    if (isNode()){
-      socket.on('open', function(){
-        that.publishToClient('server');
-      });
-      socket.on('message', function(data, flags){
-        //console.log("Incoming: " + data);
-        that.handleMessage(data, 'server');
-      });
-      socket.on('close', function(){
-        delete that.clients['server'];
-      });
-    } else {
-      socket.onopen = function(){
-        that.publishToClient('server');
-      };
-      socket.onmessage = function(event){
-        //console.log("Incoming: " + event.data);
-        that.handleMessage(event.data, 'server');
-      };
-      socket.onclose = function(){
-        delete that.clients['server'];
-      };
+    socket.onmessage = function(event){
+      instance.internal.receive("_server", event.data);
+    }
+    socket.onclose = function(){
+      instance.internal.disconnect("_server");
     }
   }
 
-
-  function Client(){
-    this.started = false;
-    this.clients = {};
-    this.registry = {};
-    this.anonRegistry = {};
-    this.callbacks = {};
-
-    this.start = startClient;
-    this.withServerApi = function (callback){
-      this.withClientApi('server', callback);
-    }
-  }
-
-  Client.prototype = common;
+  return instance;
+}
 
 
-  function Server(){
-    this.started = false;
-    this.clients = {};
-    this.registry = {};
-    this.anonRegistry = {};
-    this.callbacks = {};
-    this.disconnectCallbacks = [];
+if (typeof window != 'undefined') {
+  window.ExposeClient = BrowserClient;
+} else {
+  exports.Server = Server;
+  exports.Client = NodeClient;
+}
 
-    this.start = startServer;
-    this.getAllClients = function(){
-      return __.keys(this.clients);
-    }
-  }
-
-  Server.prototype = common;
-
-
-  if (isNode()){
-    exports.Server = function(){
-      var _server = new Server();
-      return _server;
-    }
-
-    exports.Client = function(){
-      var _client = new Client();
-      return _client;
-    }
-  } else {
-   window.ExposeClient = function(){
-      var _client = new Client();
-      return _client;
-    };
- }
-
-}).call(this);
+})();
 
 
 
