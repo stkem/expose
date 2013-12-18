@@ -2,8 +2,6 @@
 
 //ZZZ fail futures on client disconnect/timeout
 
-//ZZZ directly fulfill promise on return, instead of with a callback?
-
 //ZZZ return value futures and callback futures should contain other_id in this for the on success etc. callbacks
 
 //ZZZ transmit wrapper that is more sructured, e.g. transmit(<kind>, <data>)
@@ -15,6 +13,8 @@
 //ZZZ logging
 
 //ZZZ client cleanup?
+
+//ZZZ expose.call(<function name>, arguments) ??
 
 ///////////
 // UTIL ///
@@ -234,21 +234,21 @@ function Common(transmit, options) { //transmit takes clientId and string to sen
         transmit(client.id, JSON.stringify(message));
       } else {
         var context = {otherEnd: client.id};
-        // try {
+        try {
           var message = {
             kind: "return",
             retval: fun.apply(context, processIncomingArguments(client.id, data.args)),
             request_id: data.request_id
           };
-        // } catch(e) {
-        //   console.log(e);
-        //   var message = {
-        //     kind: "error",
-        //     message: '' + e,
-        //     code: 400,
-        //     request_id: data.request_id
-        //   };
-        // }
+        } catch(e) {
+          console.log(e);
+          var message = {
+            kind: "error",
+            message: '' + e,
+            code: 400,
+            request_id: data.request_id
+          };
+        }
         transmit(client.id,JSON.stringify(message));
       }
     },
@@ -318,15 +318,15 @@ function Common(transmit, options) { //transmit takes clientId and string to sen
       else reportError("Attempt to expose non function object!");
     },
     withClientApi: function(clientId, callback) {
-      ///ZZZ check clientId real?
-      clients[clientId].apiPromise.onSuccess(callback);
+      if (clients[clientId]) clients[clientId].apiPromise.onSuccess(callback);
+      else callback(null, "Invalid Client ID " + clientId);
     },
     onDisconnect: function(callback) {
       disconnectHandlers.push(callback);
     },
     forEachClient: function(callback) {
       for (var clientId in clients) {
-        clients[clientId].apiPromise.onSuccess(callback);
+        clients[clientId].apiPromise.onSuccess(callback.bind({otherEnd: clientId}));
       }
     }
   };
@@ -339,7 +339,7 @@ function Common(transmit, options) { //transmit takes clientId and string to sen
 
 
 
-function Server(options) { //ZZZ file server, options
+function Server(options) { //ZZZ options
   var ws = require('ws');
   var http = require('http');
   var mime = require('mime');
