@@ -1,20 +1,4 @@
-//ZZZ resume a session if the client knows it's id. Have handshake first. Gateway function ('through').
-
-//ZZZ fail futures on client disconnect/timeout
-
-//ZZZ return value futures and callback futures should contain other_id in this for the on success etc. callbacks
-
-//ZZZ transmit wrapper that is more sructured, e.g. transmit(<kind>, <data>)
-
-//ZZZ add ons can regsiter handlers and function to the public interface and get access to more sturctured transmit
-
-//ZZZ add ons can register expose hooks and static serving hooks (basically like routes), api call hooks, api construction hooks
-
-//ZZZ logging
-
-//ZZZ client cleanup?
-
-//ZZZ expose.call(<function name>, arguments) ??
+//Expose 0.1
 
 ///////////
 // UTIL ///
@@ -241,7 +225,6 @@ function Common(transmit, options) { //transmit takes clientId and string to sen
             request_id: data.request_id
           };
         } catch(e) {
-          console.log(e);
           var message = {
             kind: "error",
             message: '' + e,
@@ -349,7 +332,8 @@ function Server(options) { //ZZZ options
 
   options = options || {};
   opts = {
-    assets: options.assets || "."
+    assets: options.assets || ".",
+    debug: options.debug || false
   }
 
   function fileServer(req, res) { //ZZZ long polling hooks go here
@@ -377,7 +361,7 @@ function Server(options) { //ZZZ options
   var instance = Common(function(clientId, msg) { //ZZZ this transmit function needs to buffer, both for reconnects and long polling
     var socket = sockets[clientId];
     if (socket) {
-      console.log("Outgoing: " + msg);
+      if (opts.debug) console.log("Outgoing: " + msg);
       socket.send(msg);
     }
     else console.log("Warning. No socket for <" + clientId + ">. Not sending: " + msg);
@@ -394,13 +378,17 @@ function Server(options) { //ZZZ options
     });
 
     socket.on('message', function(data, flags) {
-      console.log("Incoming: " + data);
+      if (opts.debug) console.log("Incoming: " + data);
       instance.internal.receive(clientId, data);
     });
   });
 
   instance.start = function(host, port) {
     httpServer.listen(port, host);
+  }
+
+  instance.stop = function() {
+    httpServer.close();
   }
 
   return instance;
@@ -439,6 +427,10 @@ function NodeClient(options) {
     socket.on('close', function(){
       instance.internal.disconnect("_server");
     });
+  }
+
+  instance.stop = function() {
+    socket.close();
   }
 
   return instance;
