@@ -1,0 +1,40 @@
+{
+  "name": "expose.js",
+  "version": "0.1.0",
+  "main": "expose.js",
+  "files": [
+    "expose.js"
+  ],
+  "dependencies": {
+    "ws": "~0.4.31",
+    "mime": "~1.2.11",
+    "http": "~0.0.0",
+    "url": "~0.7.9",
+    "path": "~0.4.9"
+  },
+  "description": "Simple bi-directional (Browser)Client-Server JavaScript RPC framework",
+  "directories": {
+    "example": "examples"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "node test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/stkem/expose.git"
+  },
+  "keywords": [
+    "rpc",
+    "framework",
+    "websockets",
+    "server",
+    "easy"
+  ],
+  "author": "Stephen Kemmerling",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/stkem/expose/issues"
+  },
+  "homepage": "https://github.com/stkem/expose"
+}

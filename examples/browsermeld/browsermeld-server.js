@@ -1,9 +1,9 @@
-expose = require('./expose').Server();
+expose = require('expose.js').Server();
 
 expose.expose("update", function(html) {
   var that = this;
   expose.forEachClient(function(api){
-    if (that.otherEnd!==this.otherEnd) api.update(html);
+    if (that.id!==this.id) api.update(html);
   });
 });
 

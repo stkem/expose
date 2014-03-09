@@ -109,7 +109,7 @@ function TestEnv() {
 **********************/
 
 
-expose = require('./expose')
+expose = require('expose.js')
 server = expose.Server({debug: true, lambdaLifetime: 500});
 client = expose.Client({lambdaLifetime: 500});
 testenv = new TestEnv();

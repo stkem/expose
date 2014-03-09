@@ -5,6 +5,7 @@
 //////////
 
 (function(){
+"use strict";
 
 function keys(obj) {
   var res = [];
@@ -22,10 +23,7 @@ function reportError(msg) {
   console.error(msg);
 }
 
-function Promise() { //ZZZ make sure this can't be completed twice? or is that ok? not in it's current form. RepeatablePromise?
-  //ZZZ completeWith method that handles exceptions
-  //ZZZ and/or takes other promise
-  //ZZZ optional timeout?
+function Promise() {
   var completeCallbacks = [];
   var successCallbacks  = [];
   var failureCallbacks  = [];
@@ -217,11 +215,10 @@ function Common(transmit, options) { //transmit takes clientId and string to sen
         };
         transmit(client.id, JSON.stringify(message));
       } else {
-        var context = {otherEnd: client.id};
         try {
           var message = {
             kind: "return",
-            retval: fun.apply(context, processIncomingArguments(client.id, data.args)),
+            retval: fun.apply(client, processIncomingArguments(client.id, data.args)),
             request_id: data.request_id
           };
         } catch(e) {
@@ -257,7 +254,7 @@ function Common(transmit, options) { //transmit takes clientId and string to sen
       };
       transmit(client.id, JSON.stringify(reply));
     },
-    'pong': function(client, data) { //ZZZ tie in with 'alive' function somewhow
+    'pong': function(client, data) { //ZZZ tie in with 'alive' function
 
     }
   }
@@ -284,9 +281,10 @@ function Common(transmit, options) { //transmit takes clientId and string to sen
       publishToClient(clientId);
     },
     disconnect: function(clientId) {
+      var client = clients[clientId];
       delete clients[clientId];
       disconnectHandlers.forEach(function(cb) {
-        cb.apply(null, clientId);
+        cb.call(null, client);
       })
     },
     alive: function(clientId, callback) { //checks if client is responding correctly within clientTimeout. Call callback with true or false
@@ -309,7 +307,7 @@ function Common(transmit, options) { //transmit takes clientId and string to sen
     },
     forEachClient: function(callback) {
       for (var clientId in clients) {
-        clients[clientId].apiPromise.onSuccess(callback.bind({otherEnd: clientId}));
+        clients[clientId].apiPromise.onSuccess(callback.bind(clients[clientId]));
       }
     }
   };
@@ -322,7 +320,7 @@ function Common(transmit, options) { //transmit takes clientId and string to sen
 
 
 
-function Server(options) { //ZZZ options
+function Server(options) {
   var ws = require('ws');
   var http = require('http');
   var mime = require('mime');
@@ -331,15 +329,24 @@ function Server(options) { //ZZZ options
   var path = require('path');
 
   options = options || {};
-  opts = {
-    assets: options.assets || ".",
+  var opts = {
+    assets: options.assets ||  "./assets",
     debug: options.debug || false
   }
 
-  function fileServer(req, res) { //ZZZ long polling hooks go here
+  function fileServer(req, res) {
     var rawpath = url.parse(req.url).pathname;
-    var mimetype = mime.lookup(rawpath);
-    var fullpath = path.join(opts.assets,rawpath);
+    if (rawpath==="/" || rawpath==="") {
+        rawpath = "/index.html";
+    }
+    var mimetype, fullpath;
+    if (rawpath === "/_expose.js") {
+      mimetype = "application/javascript";
+      fullpath = path.resolve(__dirname, __filename);
+    } else {
+      mimetype = mime.lookup(rawpath);
+      fullpath = path.join(opts.assets,rawpath);
+    }
     fs.exists(fullpath, function(exists) {
       if (exists) {
         fs.readFile(fullpath, function(err, data) {
@@ -358,7 +365,7 @@ function Server(options) { //ZZZ options
 
   var sockets = {}; //clientId to Socket object
 
-  var instance = Common(function(clientId, msg) { //ZZZ this transmit function needs to buffer, both for reconnects and long polling
+  var instance = Common(function(clientId, msg) { //ZZZ this transmit function needs to buffer for reconnects
     var socket = sockets[clientId];
     if (socket) {
       if (opts.debug) console.log("Outgoing: " + msg);
