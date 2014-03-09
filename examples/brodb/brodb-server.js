@@ -62,8 +62,7 @@ expose.exports.brodb_clear = function(key){
 
 
 
-expose.exports.brodb_subscribe = function(){
-    var keys = Array.prototype.slice.call(arguments);
+expose.exports.brodb_subscribe = function(keys, sync){
     var client = this;
     keys.forEach(function(key){
         db[key] = db[key] || [];
@@ -73,9 +72,16 @@ expose.exports.brodb_subscribe = function(){
         }
         listeners[key] = keyListeners;
         forEachListener(key, client.id, function(api){
-            api.brodb_create(key, []);
+            api.brodb_create(key, db[key]);
         })
     });
+    if (sync) {
+        var subDB = {};
+        keys.forEach(function(key){
+            subDB[key] = db[key] || [];
+        });
+        return subDB;
+    }
 };
 
 

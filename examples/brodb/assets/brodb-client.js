@@ -15,8 +15,8 @@ var BroDB = (function(){
         }
     }
 
-    expose.exports.brodb_create = function(key) {
-        db[key] = db[key] || [];
+    expose.exports.brodb_create = function(key, value) {
+        db[key] = db[key] || value;
         notifyListeners(key);
     }
 
@@ -36,7 +36,7 @@ var BroDB = (function(){
     }
 
     expose.exports.brodb_pop = function(key) {
-        db[key].pop(value);
+        db[key].pop();
         notifyListeners(key);
     }
 
@@ -49,7 +49,6 @@ var BroDB = (function(){
         db[key][idx] = value;
         notifyListeners(key);
     }
-
 
 
 
@@ -76,7 +75,7 @@ var BroDB = (function(){
             },
             pop: function(){
                 expose.withServerApi(function(api){
-                    api.brodb_pop(key, value);
+                    api.brodb_pop(key);
                 });
                 return db[key].pop();
             },
@@ -105,13 +104,19 @@ var BroDB = (function(){
         }
     }
 
-    retval.subscribe = function(){
-        var keys = Array.prototype.slice.call(arguments);
+    retval.subscribe = function(keys, sync, cb){
         keys.forEach(function(key){
            db[key] = db[key] || [];
         });
         expose.withServerApi(function(api){
-            api.brodb_subscribe.apply(null, keys);
+            api.brodb_subscribe(keys, sync).onSuccess(function(serverDB){
+                if (sync) {
+                    keys.forEach(function(key){
+                       db[key] = serverDB[key];
+                    });
+                    if (cb) cb();
+                }
+            });
         });
     };
 
