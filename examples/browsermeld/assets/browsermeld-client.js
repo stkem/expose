@@ -2,9 +2,9 @@
   var expose = ExposeClient();
   var html;
 
-  expose.expose("update", function(html){
+  expose.exports.update = function(html){
     document.body.innerHTML = html;
-  });
+  };
 
   setInterval(function(){
     var newHtml = document.body.innerHTML;

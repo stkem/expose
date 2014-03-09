@@ -1,9 +1,9 @@
 expose = require('expose.js').Client();
 
 
-expose.expose('putMessage', function(msg){
+expose.exports.putMessage = function(msg){
   console.log(msg);
-});
+};
 
 expose.start("localhost", 8080);
 

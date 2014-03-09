@@ -109,7 +109,7 @@ function TestEnv() {
 **********************/
 
 
-expose = require('expose.js')
+expose = require('expose.js');
 server = expose.Server({debug: true, lambdaLifetime: 500});
 client = expose.Client({lambdaLifetime: 500});
 testenv = new TestEnv();
@@ -124,28 +124,28 @@ testenv.onComplete(function(){
 });
 
 
-server.expose('sum', function(){
+server.exports.sum = function(){
   var sum = 0;
   for (var i=0; i<arguments.length; i++){
     sum += arguments[i];
   }
   return sum;
-});
+};
 
-server.expose('inverse', function(x){
-  if (x===0) throw "Division by Zero!"
+server.exports.inverse = function(x){
+  if (x===0) throw "Division by Zero!";
   return 1/x;
-});
+};
 
-server.expose('callme', function(f,x){
+server.exports.callme = function(f,x){
   f(x);
-});
+};
 
-client.expose('indirect', function(f,x){
+client.exports.indirect = function(f,x){
   client.withServerApi(function(api){
     api.callme(f,x);
   });
-});
+};
 
 
 server.start('0.0.0.0', 8080);

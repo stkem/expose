@@ -41,10 +41,10 @@
         api.sendMessage(data);
       });
     }
-    expose.expose("putMessage", function(msg){
+    expose.exports.putMessage = function(msg){
       $("#messages").append('<div>' + msg + '</div>');
       $("#input").get(0).scrollIntoView();
-    });
+    };
     expose.start("localhost", 8080);
     $("#send").click(function(){
       send();
