@@ -222,6 +222,7 @@ function Common(transmit, options) { //transmit takes clientId and string to sen
             request_id: data.request_id
           };
         } catch(e) {
+          //throw e;
           var message = {
             kind: "error",
             message: '' + e,
@@ -309,6 +310,15 @@ function Common(transmit, options) { //transmit takes clientId and string to sen
       for (var clientId in clients) {
         clients[clientId].apiPromise.onSuccess(callback.bind(clients[clientId]));
       }
+    },
+    exports: {},
+    initExports: function(){
+      for (var name in this.exports) {
+        var field = this.exports[name];
+        if (typeof field === 'function') {
+          this.expose(name, field);
+        }
+      }
     }
   };
 
@@ -391,6 +401,7 @@ function Server(options) {
   });
 
   instance.start = function(host, port) {
+    this.initExports()
     httpServer.listen(port, host);
   }
 
@@ -419,6 +430,7 @@ function NodeClient(options) {
   }
 
   instance.start = function(host,port) {
+    this.initExports()
     socket = new ws("ws://" + host + ":" + port);
 
     socket.on('open', function(){
@@ -460,6 +472,7 @@ function BrowserClient(options) {
   }
 
   instance.start = function(host,port) {
+    this.initExports()
     socket = new WebSocket("ws://" + host + ":" + port);
 
     socket.onopen = function(){
