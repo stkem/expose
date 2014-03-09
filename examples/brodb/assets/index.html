@@ -1,0 +1,18 @@
+<head>
+    <script src="/_expose.js"></script>
+    <script src="/brodb-client.js"></script>
+</head>
+<body>
+    <script>
+        setInterval(function(){
+            var html = "<ul>"
+            var keys = BroDB.keys();
+            keys.forEach(function(key){
+                html += "<li>" + key + " => " + JSON.stringify(BroDB(key).getAll()) + "</li>";
+            });
+            html += "</ul>"
+            document.body.innerHTML = html;
+        }, 1000);
+
+    </script>
+</body>
