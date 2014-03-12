@@ -25,12 +25,12 @@ var BroDB = (function(){
         notifyListeners(key);
     }
 
-    expose.exports.brodb_popfront = function(key) {
+    expose.exports.brodb_popFront = function(key) {
         db[key].shift();
         notifyListeners(key);
     }
 
-    expose.exports.brodb_pushfront = function(key, value) {
+    expose.exports.brodb_pushFront = function(key, value) {
         db[key].unshift(value);
         notifyListeners(key);
     }
