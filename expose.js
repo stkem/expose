@@ -470,6 +470,9 @@ function BrowserClient(options) {
 
     instance.start = function(host,port) {
         this.initExports()
+
+        host = host || window.location.hostname;
+        port = port || window.location.port;
         socket = new WebSocket("ws://" + host + ":" + port);
 
         socket.onopen = function(){

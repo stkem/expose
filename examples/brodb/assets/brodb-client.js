@@ -128,7 +128,7 @@ var BroDB = (function(){
         return res;
     }
 
-    expose.start("localhost", 8080);
+    expose.start();
 
     return retval;
 
