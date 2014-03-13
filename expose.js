@@ -177,7 +177,8 @@ function Common(transmit, options) { //transmit takes clientId and string to sen
     function constructApiObject(clientId, funs) {
         var api = {};
         funs.forEach(function(funName) {
-            api[funName] = remoteFutureFactory(clientId, funName);
+            var simpleName = funName.split("::")[1];
+            api[simpleName] = remoteFutureFactory(clientId, funName);
         })
         return api;
     }
@@ -202,7 +203,10 @@ function Common(transmit, options) { //transmit takes clientId and string to sen
             transmit(client.id, JSON.stringify(message));
         },
         'publish': function(client, data) {
-            client.apiPromise.success(constructApiObject(client.id, data.funs));
+            var stdFuns = data.funs.filter(function(f){
+                return f.indexOf("std::")==0;
+            });
+            client.apiPromise.success(constructApiObject(client.id, stdFuns));
         },
         'call': function(client, data) {
             var fun = functionRegistry[data.fun] || lambdaRegistry[data.fun];
@@ -295,8 +299,8 @@ function Common(transmit, options) { //transmit takes clientId and string to sen
 
     var instance = {
         internal: internal,
-        expose: function(name, fun) {
-            if (typeof fun === 'function') functionRegistry[name] = fun;
+        expose: function(namespace, name, fun) {
+            if (typeof fun === 'function') functionRegistry[namespace + "::" + name] = fun;
             else reportError("Attempt to expose non function object!");
         },
         withClientApi: function(clientId, callback) {
@@ -316,7 +320,7 @@ function Common(transmit, options) { //transmit takes clientId and string to sen
             for (var name in this.exports) {
                 var field = this.exports[name];
                 if (typeof field === 'function') {
-                    this.expose(name, field);
+                    this.expose("std", name, field);
                 }
             }
         }
