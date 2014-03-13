@@ -177,8 +177,10 @@ function Common(transmit, options) { //transmit takes clientId and string to sen
     function constructApiObject(clientId, funs) {
         var api = {};
         funs.forEach(function(funName) {
+            var namespace = funName.split("::")[0];
             var simpleName = funName.split("::")[1];
-            api[simpleName] = remoteFutureFactory(clientId, funName);
+            api[namespace] = api[namespace] || {};
+            api[namespace][simpleName] = remoteFutureFactory(clientId, funName);
         })
         return api;
     }
@@ -203,10 +205,7 @@ function Common(transmit, options) { //transmit takes clientId and string to sen
             transmit(client.id, JSON.stringify(message));
         },
         'publish': function(client, data) {
-            var stdFuns = data.funs.filter(function(f){
-                return f.indexOf("std::")==0;
-            });
-            client.apiPromise.success(constructApiObject(client.id, stdFuns));
+            client.apiPromise.success(constructApiObject(client.id, data.funs));
         },
         'call': function(client, data) {
             var fun = functionRegistry[data.fun] || lambdaRegistry[data.fun];
@@ -304,7 +303,9 @@ function Common(transmit, options) { //transmit takes clientId and string to sen
             else reportError("Attempt to expose non function object!");
         },
         withClientApi: function(clientId, callback) {
-            if (clients[clientId]) clients[clientId].apiPromise.onSuccess(callback);
+            if (clients[clientId]) clients[clientId].apiPromise.onSuccess(function(fullApi){
+                callback(fullApi["std"]);
+            });
             else callback(null, "Invalid Client ID " + clientId);
         },
         onDisconnect: function(callback) {
@@ -312,7 +313,9 @@ function Common(transmit, options) { //transmit takes clientId and string to sen
         },
         forEachClient: function(callback) {
             for (var clientId in clients) {
-                clients[clientId].apiPromise.onSuccess(callback.bind(clients[clientId]));
+                clients[clientId].apiPromise.onSuccess(function(fullApi){
+                    callback.call(clients[clientId], fullApi["std"]);
+                });
             }
         },
         exports: {},
