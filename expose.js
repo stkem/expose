@@ -114,6 +114,8 @@ function Common(transmit, options) { //transmit takes clientId and string to sen
     var returnCallbacks = {}; //function to be called when the other side send 'return' or 'error'
     var disconnectHandlers = [];
 
+    var plugins = options.plugins || [];
+
 
     function serializeFunction(fun) {
         var maybeFunction;
@@ -281,12 +283,19 @@ function Common(transmit, options) { //transmit takes clientId and string to sen
             handler(client, data);
         },
         connect: function(clientId) {
-            clients[clientId] = new Client(clientId);
+            var newClient = new Client(clientId);
+            plugins.forEach(function(plugin){
+               if (plugin.onConnect != null) plugin.onConnect(newClient);
+            });
+            clients[clientId] = newClient;
             publishToClient(clientId);
         },
         disconnect: function(clientId) {
             var client = clients[clientId];
             delete clients[clientId];
+            plugins.forEach(function(plugin){
+                if (plugin.onDisconnect != null) plugin.onDisconnect(client);
+            });
             disconnectHandlers.forEach(function(cb) {
                 cb.call(null, client);
             })
@@ -329,7 +338,22 @@ function Common(transmit, options) { //transmit takes clientId and string to sen
         }
     };
 
- return instance;
+    //apply plugins
+    plugins.forEach(function(plugin){
+        instance[plugin.name] = plugin.init(function(clientId, callback){
+            if (clients[clientId]) clients[clientId].apiPromise.onSuccess(function(fullApi){
+                callback(fullApi[plugin.name]);
+            });
+            else callback(null, "Invalid Client ID " + clientId);
+        })
+        if (plugin.internalApi != null) {
+            for (var f in plugin.internalApi) {
+                instance.expose(plugin.name, f, plugin.internalApi[f]);
+            }
+        }
+    });
+
+    return instance;
 }
 
 
@@ -348,30 +372,37 @@ function Server(options) {
         debug: options.debug || false
     }
 
+
     function fileServer(req, res) {
         var rawpath = url.parse(req.url).pathname;
         if (rawpath==="/" || rawpath==="") {
-                rawpath = "/index.html";
+            rawpath = "/index.html";
         }
-        var mimetype, fullpath;
         if (rawpath === "/_expose.js") {
-            mimetype = "application/javascript";
-            fullpath = path.resolve(__dirname, __filename);
-        } else {
-            mimetype = mime.lookup(rawpath);
-            fullpath = path.join(opts.assets,rawpath);
-        }
-        fs.exists(fullpath, function(exists) {
-            if (exists) {
-                fs.readFile(fullpath, function(err, data) {
-                    res.writeHead(200, {'Content-Type': mimetype});
-                    res.end(data);
+            fs.readFile(path.resolve(__dirname, __filename), function(err, data){
+                res.writeHead(200, {'Content-Type': "application/javascript"});
+                var fullData = data;
+                (options.plugins || []).forEach(function(plugin){
+                    if (plugin.clientJs != null) fullData += plugin.clientJs();
                 });
-            } else {
-                res.writeHead(404);
-                res.end();
-            }
-        })
+                res.end(fullData);
+            });
+        } else {
+            var mimetype = mime.lookup(rawpath);
+            var fullpath = path.join(opts.assets,rawpath);
+            fs.exists(fullpath, function(exists) {
+                if (exists) {
+                    fs.readFile(fullpath, function(err, data) {
+                        res.writeHead(200, {'Content-Type': mimetype});
+                        res.end(data);
+                    });
+                } else {
+                    res.writeHead(404);
+                    res.end();
+                }
+            });
+        }
+
     }
 
     var httpServer = http.createServer(fileServer);

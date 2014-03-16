@@ -110,8 +110,9 @@ function TestEnv() {
 
 
 expose = require('expose.js');
-server = expose.Server({debug: true, lambdaLifetime: 500});
-client = expose.Client({lambdaLifetime: 500});
+testPlugin = require('./plugins/bing.js');
+server = expose.Server({debug: true, lambdaLifetime: 500, plugins: [testPlugin.create()]});
+client = expose.Client({debug: true, lambdaLifetime: 500, plugins: [testPlugin.create()]});
 testenv = new TestEnv();
 
 testenv.onComplete(function(){
@@ -160,6 +161,9 @@ setTimeout(function(){
     api.indirect(testenv.expect("circuitous", "circuitous").within(10), "circuitous");
   });
 
+  server.bing();
+
+  client.bing();
 
   client.withServerApi(function(api){
     api.sum(1,2,3).onSuccess(testenv.expect("sum of 1,2 and 3 is 6", 6).within(10));
