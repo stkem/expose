@@ -1,0 +1,86 @@
+<html>
+<head>
+    <script src="/_expose.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+    <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" rel="stylesheet">
+    <style type="text/css">
+        body {
+            overflow: hidden;
+        }
+        #container {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            display: -webkit-flex;
+            -webkit-flex-direction: column;
+            -webkit-justify-content: flex-end;
+            height: 100%;
+        }
+        #messages {
+            overflow: auto;
+        }
+        #input #msg {
+            float: left;
+            width: 85%;
+        }
+        #input #send {
+            float: right;
+            width: 15%;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="messages"></div>
+        <div id="input">
+            <input id="msg" type="text" placeholder="Message"></input>
+            <button id="send">Send</button>
+        </div>
+    </div>
+    <script>
+        (function(){
+            var expose = ExposeClient();
+            expose.start();
+            var name = localStorage.getItem("name") || prompt("Who are you?");
+            if (name) localStorage.setItem("name", name);
+            window.expose = expose;
+
+            setTimeout(function(){
+            expose.db.subscribe(["room" + window.location.hash], function(messageList) {
+
+                function renderMessages() {
+                    var html = "";
+                    messageList.getAll().forEach(function(message){
+                        html += message + "<br>";
+                    });
+                    $("#messages").html(html);
+                }
+
+                function send() {
+                    var message = $("#msg").val();
+                    if (message.length===0) return;
+                    $("#msg").val(function(){return ""});
+                    messageList.push(name + ": " + message);
+                }
+
+
+                $("#send").click(function(){
+                    send();
+                });
+
+                $("#input").keyup(function (e) {
+                    if (e.keyCode == 13) {
+                        send();
+                    }
+                });
+
+                messageList.onChange(renderMessages);
+                renderMessages();
+
+
+            });
+            }, 500);
+        })();
+    </script>
+</body>
+</html>

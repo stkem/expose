@@ -30,7 +30,7 @@ exports.create = function(){
             bing: function(){console.log(this.id + " => bing")}
         },
         clientJs: function(){
-            return "window.foooo = 'blah';"; //ZZZ need to test this properly
+            return "window.foooo = 'blah';";
         }
     }
 }

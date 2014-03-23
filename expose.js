@@ -168,7 +168,7 @@ function Common(transmit, options) { //transmit takes clientId and string to sen
 
     function processIncomingArguments(clientId, args) {
         return args.map(function(arg) {
-            if (arg.hasOwnProperty("_$exfunid")) {
+            if (arg != null && arg.hasOwnProperty("_$exfunid")) {
                 return remoteFutureFactory(clientId, arg["_$exfunid"]);
             } else {
                 return arg;
@@ -492,11 +492,16 @@ function NodeClient(options) {
 
 function BrowserClient(options) {
     var socket;
+    options = options || {};
+    options.plugins = options.plugins || [];
+    (window.__exposePlugins || []).forEach(function(plugin){
+        options.plugins.push(plugin());
+    });
 
     var instance = Common(function(clientId, msg) {
         if (clientId === "_server") socket.send(msg);
         else console.log("Unknown Client: " + clientId);
-    },options || {});
+    },options);
 
     var onOpen = [];
     var opened = false;
@@ -537,6 +542,9 @@ if (typeof window != 'undefined') {
 } else {
     exports.Server = Server;
     exports.Client = NodeClient;
+    exports.plugins = {
+        dbServer: require("./plugins/db/dbServer.js").create
+    }
 }
 
 })();
