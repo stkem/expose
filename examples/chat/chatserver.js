@@ -1,4 +1,4 @@
-var expose = require('expose.js').Server();
+var expose = require('expose.js').Server({port: 8080});
 
 var registry = {};
 
@@ -20,5 +20,5 @@ expose.onDisconnect(function(client){
   delete registry[client.id];
 });
 
-expose.start('0.0.0.0', 8080);
+expose.start();
 

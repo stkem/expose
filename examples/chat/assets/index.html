@@ -52,7 +52,7 @@
         expose.exports.putMessage = function(msg){
             $("#messages").append('<div>' + msg + '</div>').scrollTop(314159);
         };
-        expose.start("localhost", 8080);
+        expose.start();
         $("#send").click(function(){
             send();
         });

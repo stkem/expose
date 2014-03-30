@@ -1,4 +1,4 @@
-var expose = require("expose.js").Server({debug: true});
+var expose = require("expose.js").Server({debug: true, port: 8080});
 
 
 var db = {};
@@ -94,5 +94,5 @@ expose.onDisconnect(function(client){
 });
 
 
-expose.start("0.0.0.0", 8080);
+expose.start();
 

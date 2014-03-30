@@ -111,8 +111,18 @@ function TestEnv() {
 
 expose = require('expose.js');
 testPlugin = require('./plugins/bing.js');
-server = expose.Server({debug: true, lambdaLifetime: 500, plugins: [testPlugin.create()]});
-client = expose.Client({debug: true, lambdaLifetime: 500, plugins: [testPlugin.create()]});
+server = expose.Server({
+    debug: true,
+    lambdaLifetime: 500,
+    plugins: [testPlugin.create()],
+    port: 8080
+});
+client = expose.Client({
+    debug: true,
+    lambdaLifetime: 500,
+    plugins: [testPlugin.create()],
+    port: 8080
+});
 testenv = new TestEnv();
 
 testenv.onComplete(function(){
@@ -149,9 +159,9 @@ client.exports.indirect = function(f,x){
 };
 
 
-server.start('0.0.0.0', 8080);
+server.start();
 
-client.start('0.0.0.0', 8080);
+client.start();
 
 
 //give it some time for connections to be established

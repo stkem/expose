@@ -1,4 +1,4 @@
-expose = require('expose.js').Server();
+expose = require('expose.js').Server({port: 8080});
 
 expose.exports.update = function(html) {
   var that = this;
@@ -7,4 +7,4 @@ expose.exports.update = function(html) {
   });
 };
 
-expose.start('0.0.0.0', 8080);
+expose.start();

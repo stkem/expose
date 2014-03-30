@@ -4,7 +4,8 @@ var server = expose.Server({
     plugins: [
         expose.plugins.dbServer(),
         expose.plugins.routes()
-    ]
+    ],
+    port: 8080
 });
 server.db.createNamespace();
 server.routes.any("/", function(req, res){
@@ -12,4 +13,4 @@ server.routes.any("/", function(req, res){
     res.end();
 });
 server.routes.any.alias(/^\/[0-9A-F]{5}$/, "/");
-server.start('0.0.0.0', 8080);
+server.start();

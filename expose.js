@@ -369,7 +369,9 @@ function Server(options) {
     options = options || {};
     var opts = {
         assets: options.assets ||    "./assets",
-        debug: options.debug || false
+        debug: options.debug || false,
+        host: options.host || '0.0.0.0',
+        port: options.port || 80
     }
 
 
@@ -442,7 +444,7 @@ function Server(options) {
             socket.send(msg);
         }
         else console.log("Warning. No socket for <" + clientId + ">. Not sending: " + msg);
-    },options)
+    },options);
 
     wsServer.on('connection', function(socket) {
         var clientId = uuid();
@@ -460,9 +462,9 @@ function Server(options) {
         });
     });
 
-    instance.start = function(host, port) {
+    instance.start = function() {
         this.initExports()
-        httpServer.listen(port, host);
+        httpServer.listen(opts.port, opts.host);
     }
 
     instance.stop = function() {
@@ -476,10 +478,17 @@ function NodeClient(options) {
     var ws = require('ws');
     var socket;
 
+    options = options || {};
+
     var instance = Common(function(clientId, msg) {
         if (clientId === "_server") socket.send(msg);
         else console.log("Unknown Client: " + clientId);
-    },options || {});
+    },options);
+
+    var opts= {
+        host: options.host || '0.0.0.0',
+        port: options.port || 80
+    }
 
     var onOpen = [];
     var opened = false;
@@ -489,9 +498,10 @@ function NodeClient(options) {
         else onOpen.push(instance.withClientApi.bind(instance,'_server', callback));
     }
 
-    instance.start = function(host,port) {
-        this.initExports()
-        socket = new ws("ws://" + host + ":" + port);
+    instance.start = function(onConnect) {
+        if (onConnect) onOpen.push(onConnect);
+        this.initExports();
+        socket = new ws("ws://" + opts.host + ":" + opts.port);
 
         socket.on('open', function(){
             instance.internal.connect("_server");
@@ -536,11 +546,12 @@ function BrowserClient(options) {
         else onOpen.push(instance.withClientApi.bind(instance,'_server', callback));
     }
 
-    instance.start = function(host,port) {
-        this.initExports()
+    instance.start = function(onConnect) {
+        if (onConnect) onOpen.push(onConnect);
+        this.initExports();
 
-        host = host || window.location.hostname;
-        port = port || window.location.port;
+        var host = options.host || window.location.hostname;
+        var port = options.port || window.location.port;
         socket = new WebSocket("ws://" + host + ":" + port);
 
         socket.onopen = function(){

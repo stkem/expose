@@ -40,45 +40,44 @@
     <script>
         (function(){
             var expose = ExposeClient();
-            expose.start();
             var name = localStorage.getItem("name") || prompt("Who are you?");
             if (name) localStorage.setItem("name", name);
 
-            setTimeout(function(){
-            expose.db.subscribe(["room" + window.location.pathname], function(messageList) {
+            expose.start(function () {
+                expose.db.subscribe(["room" + window.location.pathname], function (messageList) {
 
-                function renderMessages() {
-                    var html = "";
-                    messageList.getAll().forEach(function(message){
-                        html += message + "<br>";
-                    });
-                    $("#messages").html(html);
-                }
-
-                function send() {
-                    var message = $("#msg").val();
-                    if (message.length===0) return;
-                    $("#msg").val(function(){return ""});
-                    messageList.push(name + ": " + message);
-                }
-
-
-                $("#send").click(function(){
-                    send();
-                });
-
-                $("#input").keyup(function (e) {
-                    if (e.keyCode == 13) {
-                        send();
+                    function renderMessages() {
+                        var html = "";
+                        messageList.getAll().forEach(function (message) {
+                            html += message + "<br>";
+                        });
+                        $("#messages").html(html);
                     }
+
+                    function send() {
+                        var message = $("#msg").val();
+                        if (message.length === 0) return;
+                        $("#msg").val(function () {
+                            return ""
+                        });
+                        messageList.push(name + ": " + message);
+                    }
+
+
+                    $("#send").click(function () {
+                        send();
+                    });
+
+                    $("#input").keyup(function (e) {
+                        if (e.keyCode == 13) {
+                            send();
+                        }
+                    });
+
+                    messageList.onChange(renderMessages);
+                    renderMessages();
                 });
-
-                messageList.onChange(renderMessages);
-                renderMessages();
-
-
             });
-            }, 500);
         })();
     </script>
 </body>

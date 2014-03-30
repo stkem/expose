@@ -1,11 +1,11 @@
-expose = require('expose.js').Client();
+expose = require('expose.js').Client({port: 8080});
 
 
 expose.exports.putMessage = function(msg){
   console.log(msg);
 };
 
-expose.start("localhost", 8080);
+expose.start();
 
 expose.withServerApi(function(api){
   api.register(process.argv[2]);

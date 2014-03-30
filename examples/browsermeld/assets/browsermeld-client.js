@@ -1,5 +1,5 @@
 (function(){
-  var expose = ExposeClient();
+  var expose = ExposeClient({port: 8080});
   var html;
 
   expose.exports.update = function(html){
@@ -16,5 +16,5 @@
     html = newHtml;
   }, 1000);
 
-  expose.start("localhost", 8080);
+  expose.start();
 })();
