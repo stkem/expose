@@ -43,10 +43,9 @@
             expose.start();
             var name = localStorage.getItem("name") || prompt("Who are you?");
             if (name) localStorage.setItem("name", name);
-            window.expose = expose;
 
             setTimeout(function(){
-            expose.db.subscribe(["room" + window.location.hash], function(messageList) {
+            expose.db.subscribe(["room" + window.location.pathname], function(messageList) {
 
                 function renderMessages() {
                     var html = "";

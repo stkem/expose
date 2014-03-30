@@ -31,6 +31,9 @@ exports.create = function(){
         },
         clientJs: function(){
             return "window.foooo = 'blah';";
+        },
+        httpHook: function(req, res, next) {
+            next();
         }
     }
 }

@@ -373,13 +373,10 @@ function Server(options) {
     }
 
 
-    function fileServer(req, res) {
-        var rawpath = url.parse(req.url).pathname;
-        if (rawpath==="/" || rawpath==="") {
-            rawpath = "/index.html";
-        }
-        if (rawpath === "/_expose.js") {
-            fs.readFile(path.resolve(__dirname, __filename), function(err, data){
+    var httpHandlers = [];
+    httpHandlers.push(function(req, res, next){
+        if (req.url.pathname === "/_expose.js" && req.method === 'GET') {
+            fs.readFile(path.resolve(__dirname, __filename), function(err, data) {
                 res.writeHead(200, {'Content-Type': "application/javascript"});
                 var fullData = data;
                 (options.plugins || []).forEach(function(plugin){
@@ -388,21 +385,49 @@ function Server(options) {
                 res.end(fullData);
             });
         } else {
-            var mimetype = mime.lookup(rawpath);
-            var fullpath = path.join(opts.assets,rawpath);
-            fs.exists(fullpath, function(exists) {
-                if (exists) {
-                    fs.readFile(fullpath, function(err, data) {
-                        res.writeHead(200, {'Content-Type': mimetype});
-                        res.end(data);
-                    });
-                } else {
-                    res.writeHead(404);
-                    res.end();
-                }
+            next();
+        }
+    });
+    (options.plugins || []).forEach(function(plugin) {
+        if (plugin.httpHook != null) {
+            httpHandlers.push(plugin.httpHook);
+        }
+    });
+    httpHandlers.push(function(req, res){
+        var rawpath = req.url.pathname;
+        if (rawpath==="/" || rawpath==="") {
+            rawpath = "/index.html";
+        }
+        var mimetype = mime.lookup(rawpath);
+        var fullpath = path.join(opts.assets,rawpath);
+        fs.exists(fullpath, function(exists) {
+            if (exists) {
+                fs.readFile(fullpath, function(err, data) {
+                    res.writeHead(200, {'Content-Type': mimetype});
+                    res.end(data);
+                });
+            } else {
+                res.writeHead(404);
+                res.end("Not found");
+            }
+        });
+    });
+
+
+
+    function fileServer(req, res) {
+        req.url = url.parse(req.url);
+        function tryToHandle(idx) {
+            var handler = httpHandlers[idx];
+            if (handler === undefined) {
+                res.writeHead(500);
+                res.end("No Handler");
+            }
+            handler(req, res, function(){
+                tryToHandle(idx+1);
             });
         }
-
+        tryToHandle(0);
     }
 
     var httpServer = http.createServer(fileServer);
@@ -543,7 +568,9 @@ if (typeof window != 'undefined') {
     exports.Server = Server;
     exports.Client = NodeClient;
     exports.plugins = {
-        dbServer: require("./plugins/db/dbServer.js").create
+        dbServer : require("./plugins/db/dbServer.js").create,
+        dbClient : require("./plugins/db/dbClient.js").create,
+        routes   : require("./plugins/routes/routes.js").create
     }
 }
 
