@@ -6,13 +6,23 @@ There is an extensive plugins API to extend/build upon this functionality. __Exp
 
 
 #Basic Usage
-An instace of the server is obtained simply with ```var expose = require("expose.js").Server([options])```, where options are decribed below. Similarly the node.js client is just ```var expose = require("expose.js").Client([options])```.
+An instace of the server is obtained simply with 
+```js
+var expose = require("expose.js").Server([options])
+```
+where options are decribed below. Similarly the node.js client is just 
+```js
+var expose = require("expose.js").Client([options])
+```
 
-Assuming you have an expose server running (with no additional configuration required) you can include ```"/_expose.js"``` in the browser, which then lets you contruct an expose object as ```var expose = ExposeClient([options])```.
+Assuming you have an expose server running (with no additional configuration required) you can include ```"/_expose.js"``` in the browser, which then lets you contruct an expose object as 
+```js
+var expose = ExposeClient([options])
+```.
 
 Once you have this you can freely export function for remote calls (both on the client and the server) like so
 
-```
+```js
 expose.exports.<name> = function (arg1, arg2, ...) {
 	...
 }
@@ -26,21 +36,21 @@ When a function is called remotely, ```this.id``` is bound to a unique identifie
 
 On the client you can gain access to the functions exported on the server via
 
-```
+```js
 expose.withServerApi(function (api) {
 	...
 });
 ```
 where ```api``` is an object that has all the methods exported by the server. Similarly, on the server you can gain access to a particular clients api with
 
-```
+```js
 expose.withClientApi(client_id, function (api) {
 	...
 });
 ```
 where ```client_id``` is the same id that gets bound to ```this.id``` on incoming calls, and - just like on the client - ```api``` is an object with all the methods exported by that particular client. Additionally the server has a method to get all clients, like so
 
-```
+```js
 expose.forEachClient(function (api) {
 	...
 });
@@ -51,7 +61,7 @@ where ```this``` in the inner function is bound to the current client id.
 #A simple Example
 Server:
 
-```
+```js
 var expose = require("expose.js").Server();
 expose.exports.ping = function () {
 	expose.withClientApi(this.id, function(api){
@@ -63,7 +73,7 @@ expose.start();
 
 Client:
 
-```
+```js
 < script src="/_expose.js" ></ script >
 < script >
 var expose = ExposeClient();
