@@ -92,18 +92,18 @@ expose.start(function (){
 
 #Limitations
 
-- Functions are only supported as top level arguments to remote functions. If you pass an object to a remote function that contains a function it will be lost. This limitation will likeley (but optionally due to serialization cost) be removed at some point.
+- Functions are only supported as top level arguments to remote functions. If you pass an object to a remote function that contains a function it will be lost. This limitation will likely (but optionally due to serialization cost) be removed at some point.
 
-- Callbacks passed to remote function time out after a certain (configurable) amount of time, i.e. the remote end can only call teh callbacks for a fixed amount of time before calls result in errors. Therefore you should not sore functions you have received as arguments from remote. This limitation does not apply 
+- Callbacks passed to remote function time out after a certain (configurable) amount of time, i.e. the remote end can only call the callbacks for a fixed amount of time before calls result in errors. Therefore you should not store functions you have received as arguments from remote. This limitation does not apply to functions that have previously been exported.
 
-- Only modern browsers are currently supported, since the RPC happen over WebSockets. This requirement will likely go away in the future. If you are not sure what browsers you can use, [check this out](http://caniuse.com/websockets).
+- Only modern browsers are currently supported, since the RPCs happen over WebSockets. This requirement will likely go away in the future. If you are not sure what browsers you can use, [check this out](http://caniuse.com/websockets).
 
 
 #Options
 Both Client and Server have the following options (passed as an object at construction time):
 
 - ```host```: String. Which host to listen on (server) or connect to (client). Defaults to "0.0.0.0" on the server, "localhost" in the node.js client and whatever domain the browser is currently on in the Browser client.
-- ```port```: Number. What port to listen on (server) or connect to (client). Default to 80.
+- ```port```: Number. What port to listen on (server) or connect to (client). Defaults to 80.
 - ```plugins```: Array of plugin object. See __Plugins__ section below. Defaults to empty Array.
 - ```lambdaLifetime```: Number. How long passed callbacks should be available to be called from the remote end in milliseconds. Defaults to 10000. Does not apply t exported functions (which will not expire).
 
