@@ -1,82 +1,121 @@
 # Overview
 
-__Expose__ is a simple, low level web framework for single page web apps. It's very different from most common web frameworks in that there are no Models, Views or Controllers out of the box. With the exception of the root page of your site, __Expose__ also does not deal with serving up any resources directly.
-__Expose__ instead lets you treat client and server code (almost) as if they were in the same process. Both client and server can expose arbitrary functions, which the other can then call as if they were local functions, passing callbacks and all.
-You will likely still be writing seperate code for the client and the server, but __Expose__ makes the interaction between the two a whole lot easier.
+__Expose.js__ is a minimalist web framework for node.js, primarily targeted at single page apps. All it provides out of the box is a simple file server and the ability to make fully transparent __bidirectional remote procedure calls__ between the server and the browser (there is also a node.js client).
+There is an extensive plugins API to extend/build upon this functionality. __Expose.js__ comes with a plugin for directly sharing data between client/server and client/client (i.e. it is kept in sync) and for traditional web framework style _routes_.
 
-## Example
-Here is a terribly contrived example that has the client offloading some complicated computation to the server:
 
-### Server
-```js
-function square(x, callback){
-	callback(x,x*x);
-}
-expose("square", square)
+
+#Basic Usage
+An instace of the server is obtained simply with ```var expose = require("expose.js").Server([options])```, where options are decribed below. Similarly the node.js client is just ```var expose = require("expose.js").Client([options])```.
+
+Assuming you have an expose server running (with no additional configuration required) you can include ```"/_expose.js"``` in the browser, which then lets you contruct an expose object as ```var expose = ExposeClient([options])```.
+
+Once you have this you can freely export function for remote calls (both on the client and the server) like so
+
 ```
-
-### Client
-
-```js
-function updateResult(x, x2){
-	console.log("The square of " + x + " is " + x2);
-}
-
-function doSquare(x){
-	withServerApi(function(api){
-		api.square(x, updateResult);
-	});
+expose.exports.<name> = function (arg1, arg2, ...) {
+	...
 }
 ```
 
-You can also get the return value of a remote function. Using that functionality - throwing in some anonymous functions - the example would look like this
+These functions can then be called remotely as if they were local functions, including passing callbacks as arguments. The clients only have (direct) access to functions exported on the server, whereas the server has access to exported functions on all clients.
 
-### Server Take 2
-```js
-expose("square", function(x, callback){
-	return x*x;
+When you are done exporting functions, just call ```expose.start()```.
+
+When a function is called remotely, ```this.id``` is bound to a unique identifier for the other end making the call. This is mostly useful on the server to keep track of clients. On the client it will always be ```_server```.
+
+On the client you can gain access to the functions exported on the server via
+
+```
+expose.withServerApi(function (api) {
+	...
 });
 ```
+where ```api``` is an object that has all the methods exported by the server. Similarly, on the server you can gain access to a particular clients api with
 
-### Client Take 2
-```js
-function doSquare(x){ use return value here
-	withServerApi(function(api){
-		var future = api.square(x);
-		future.onComplete(function(value, error){ //'error' will pass through exceptions that occured on the server
-			if (!error){
-				console.log("The square of " + x + " is " + value);
-			} else {
-				console.log("Error: " + error);
-			}
-		});
+```
+expose.withClientApi(client_id, function (api) {
+	...
+});
+```
+where ```client_id``` is the same id that gets bound to ```this.id``` on incoming calls, and - just like on the client - ```api``` is an object with all the methods exported by that particular client. Additionally the server has a method to get all clients, like so
+
+```
+expose.forEachClient(function (api) {
+	...
+});
+```
+where ```this``` in the inner function is bound to the current client id.
+
+
+#A simple Example
+Server:
+
+```
+var expose = require("expose.js").Server();
+expose.exports.ping = function () {
+	expose.withClientApi(this.id, function(api){
+		api.pong();
 	});
-}
+};
+expose.start();  
 ```
 
-__The client can expose functions just as easily as the server with a very similar api on the server to access those.__
+Client:
+
+```
+< script src="/_expose.js" ></ script >
+< script >
+var expose = ExposeClient();
+expose.exports.pong = function () {
+	console.log(pong);
+};
+expose.start(function (){
+	//we are all connected to the server now
+	expose.withServerApi(function(api){
+		server.ping();
+	});
+});
+</ script>
+```
 
 
-# Server Api
+#Limitations
+
+- Functions are only supported as top level arguments to remote functions. If you pass an object to a remote function that contains a function it will be lost. This limitation will likeley (but optionally due to serialization cost) be removed at some point.
+
+- Callbacks passed to remote function time out after a certain (configurable) amount of time, i.e. the remote end can only call teh callbacks for a fixed amount of time before calls result in errors. Therefore you should not sore functions you have received as arguments from remote. This limitation does not apply 
+
+- Only modern browsers are currently supported, since the RPC happen over WebSockets. This requirement will likely go away in the future. If you are not sure what browsers you can use, [check this out](http://caniuse.com/websockets).
 
 
-# Client Api
+#Options
+Both Client and Server have the following options (passed as an object at construction time):
+
+- ```host```: String. Which host to listen on (server) or connect to (client). Defaults to "0.0.0.0" on the server, "localhost" in the node.js client and whatever domain the browser is currently on in the Browser client.
+- ```port```: Number. What port to listen on (server) or connect to (client). Default to 80.
+- ```plugins```: Array of plugin object. See __Plugins__ section below. Defaults to empty Array.
+- ```lambdaLifetime```: Number. How long passed callbacks should be available to be called from the remote end in milliseconds. Defaults to 10000. Does not apply t exported functions (which will not expire).
+
+Additionally the Server has the following options
+
+- ```assets```: String. The path of the folder that files should be served from. Defaults to "./assets".
+- ```debug```: Boolean. Prints some information to console as calls are being processed.
+
+#Complete API
+
+DOC TODO
+
+#Plugins
+
+DOC TODO
 
 
-# Complete Example
+#More Examples
+
+DOC TODO
 
 
-# Gotchas
-Only top level callbacks are supported at the moment, i.e. if you want to pass a callback to a remote function, it has to be one of the actual direct arguments to the function and not be nested inside another data structure (i.e. object or array).
+#Install
 
-Callbacks expire after 10 seconds, i.e. if you pass a callback to a remote function, the remote has to call it within 10 seconds or it results in an error. This is for garbadge collection purposes. This does not apply if the callback is also an exposed function.
-
-
-
-#Client-Client communication
-##WebRTC
-
-#Dependencies
-Node Packages: uuid, ws, lodash, mime
-
-On the Client: uuid.js and lodash.js in the directory you are serving from.
+DOC TODO

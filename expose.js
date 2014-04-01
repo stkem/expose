@@ -486,7 +486,7 @@ function NodeClient(options) {
     },options);
 
     var opts= {
-        host: options.host || '0.0.0.0',
+        host: options.host || 'localhost',
         port: options.port || 80
     }
 
