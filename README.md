@@ -18,7 +18,7 @@ var expose = require("expose.js").Client([options])
 Assuming you have an expose server running (with no additional configuration required) you can include ```"/_expose.js"``` in the browser, which then lets you contruct an expose object as 
 ```js
 var expose = ExposeClient([options])
-```.
+```
 
 Once you have this you can freely export function for remote calls (both on the client and the server) like so
 
