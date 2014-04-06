@@ -1,1 +1,1 @@
-Nothing to see here. Move along.
+Keeps the body of all connected browsers in sync. Great for cross browser css testing.

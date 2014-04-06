@@ -1,1 +1,0 @@
-Full multi room chat in 100 (short) lines; html + css + js, client + server.

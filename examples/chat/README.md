@@ -1,1 +1,1 @@
-Nothing to see here. Move along.
+Simple chat app.

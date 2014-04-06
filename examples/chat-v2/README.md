@@ -1,0 +1,1 @@
+Full multi room chat in less than 100 (short) lines; html + css + js, client + server. Uses the db and the routes plugin. (See plugins folder).

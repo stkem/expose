@@ -58,7 +58,7 @@ expose.forEachClient(function (api) {
 where ```this``` in the inner function is bound to the current client id.
 
 
-#A simple Example
+#A Simple Example
 Server:
 
 ```js
