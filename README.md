@@ -146,4 +146,6 @@ Expose.js has an extensive API for plugins to hook into. More information on how
 
 #Install
 
-DOC TODO****
+```
+npm install expose.js
+```
