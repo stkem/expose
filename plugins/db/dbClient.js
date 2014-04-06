@@ -205,7 +205,7 @@
                 db[namespace] = db[namespace] || {};
                 withInternalApi("_server", function(api){
                     var p = api.subscribe(namespace, keys, true);
-                    p.onSuccess(function(subDB){
+                    p.then(function(subDB){
                         for (var k in subDB) {
                             db[namespace][k] = subDB[k];
                         }

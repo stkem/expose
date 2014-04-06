@@ -176,11 +176,11 @@ setTimeout(function(){
   client.bing();
 
   client.withServerApi(function(api){
-    api.sum(1,2,3).onSuccess(testenv.expect("sum of 1,2 and 3 is 6", 6).within(10));
-    api.inverse(2).onSuccess(testenv.expect("One over 2 is 0.5", 0.5).within(10));
+    api.sum(1,2,3).then(testenv.expect("sum of 1,2 and 3 is 6", 6).within(10));
+    api.inverse(2).then(testenv.expect("One over 2 is 0.5", 0.5).within(10));
     var inverseOfZeroFuture = api.inverse(0);
-    inverseOfZeroFuture.onFailure(testenv.expect("Inverse of zero is an error", "Division by Zero!").within(10));
-    inverseOfZeroFuture.onSuccess(testenv.expect("Inverse of zero is not a thing").never());
+    inverseOfZeroFuture.then(null,testenv.expect("Inverse of zero is an error", "Division by Zero!").within(10));
+    inverseOfZeroFuture.then(testenv.expect("Inverse of zero is not a thing").never());
   });
 
 }, 200);

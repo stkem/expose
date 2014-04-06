@@ -57,6 +57,12 @@ expose.forEachClient(function (api) {
 ```
 where ```this``` in the inner function is bound to the current client id.
 
+Calls to remote functions immediately return a promise with a single method intead for user consumption
+
+```js
+then([onSuccess(result)], [onFailure(exception)])
+```
+Where `onSuccess` will be called with the remote functions return value if there was no exception (it will be called even if the remote function does not return a value) and `onFailure` will be called with the remote exception if there was one.
 
 #A Simple Example
 Server:
@@ -65,7 +71,11 @@ Server:
 var expose = require("expose.js").Server();
 expose.exports.ping = function () {
 	expose.withClientApi(this.id, function(api){
-		api.pong();
+		api.pong().then(function () {
+			console.log("succefully ponged the client"));
+		}, function (err) {
+			console.log("seems like something went wrong: " + err);
+		});
 	});
 };
 expose.start();  

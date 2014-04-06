@@ -109,7 +109,7 @@ var BroDB = (function(){
            db[key] = db[key] || [];
         });
         expose.withServerApi(function(api){
-            api.brodb_subscribe(keys, sync).onSuccess(function(serverDB){
+            api.brodb_subscribe(keys, sync).then(function(serverDB){
                 if (sync) {
                     keys.forEach(function(key){
                        db[key] = serverDB[key];

@@ -80,6 +80,14 @@ function Promise() {
         if (isComplete && !isSuccessful) callback(failureReason);
         else failureCallbacks.push(callback);
     };
+    this.then = function(good, bad) {
+        if (good != null) {
+            this.onSuccess(good);
+        }
+        if (bad != null) {
+            this.onFailure(bad);
+        }
+    };
 
 }
 
