@@ -1,4 +1,4 @@
-This plugin add classic web framework style http routing to expose.js. It's server side only and takes to options. You can create a erver with routign capability simply like
+This plugin adds classic web framework style http routing to expose.js. It's server side only and takes to options. You can create a server with routing capability simply like so
 
 ```js
 var expose = require('expose.js');
@@ -16,7 +16,7 @@ server.routes.get("/users", function(req, res){
 	...
 });
 ```
-To server a `GET` request to the path `/users`. `req` and `res` are just like the objects used by the node.js standard http server, except that `req.url` is a fully parsed url object instead of a string.
+To serve a `GET` request to the path `/users`. `req` and `res` are just like the objects used by the node.js standard http server, except that `req.url` is a fully parsed url object instead of a string.
 
 More generally what is available is
 
