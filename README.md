@@ -72,7 +72,7 @@ var expose = require("expose.js").Server();
 expose.exports.ping = function () {
 	expose.withClientApi(this.id, function(api){
 		api.pong().then(function () {
-			console.log("succefully ponged the client"));
+			console.log("succefully ponged the client");
 		}, function (err) {
 			console.log("seems like something went wrong: " + err);
 		});
@@ -88,12 +88,12 @@ Client:
 < script >
 var expose = ExposeClient();
 expose.exports.pong = function () {
-	console.log(pong);
+	console.log("pong");
 };
 expose.start(function (){
 	//we are all connected to the server now
 	expose.withServerApi(function(api){
-		server.ping();
+		api.ping();
 	});
 });
 </ script>
